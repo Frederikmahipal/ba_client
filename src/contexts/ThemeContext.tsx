@@ -9,10 +9,10 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<PropsWithChildren<{}>> = ({ children }) => {
-  const [theme, setTheme] = useState('cupcake'); // Start with Cupcake theme
+  const [theme, setTheme] = useState('business'); // Start with Cupcake theme
 
   const toggleTheme = () => {
-    const newTheme = theme === 'cupcake' ? 'synthwave' : 'cupcake';
+    const newTheme = theme === 'business' ? 'corporate' : 'business';
     setTheme(newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
   };

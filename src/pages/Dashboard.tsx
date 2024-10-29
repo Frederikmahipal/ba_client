@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import Header from '../components/Header';
 import ArtistView from '../components/ArtistView';
-import Playlists from '../components/Playlists'; 
+import Playlists from '../components/Playlists';
+import SpotifyPlayer from '../components/WebPlayer';
 
 const Dashboard: React.FC = () => {
   const [activeBox, setActiveBox] = useState(0);
@@ -38,18 +39,18 @@ const Dashboard: React.FC = () => {
       {/* Render the Header */}
       <Header onArtistSelect={handleArtistSelect} />
 
-      {/* Dashboard Content */}
-      <div className="flex-grow flex flex-col lg:flex-row justify-around items-center p-4 overflow-hidden">
+      {/* Dashboard Content - Add pb-24 to account for player height */}
+      <div className="flex-grow flex flex-col lg:flex-row justify-around items-center p-4 overflow-hidden pb-24">
         {/* Left Box - Playlists */}
         <div className="hidden lg:block w-full lg:w-1/4 p-2">
-          <div className="bg-base-200 h-[620px] rounded-lg shadow-lg overflow-auto">
+          <div className="bg-secondary h-[620px] rounded-lg shadow-lg overflow-auto">
             <Playlists onArtistSelect={handleArtistSelect} />
           </div>
         </div>
 
         {/* Middle Box - Artist View */}
         <div className="hidden lg:block w-full lg:w-2/4 p-2">
-          <div className="bg-base-200 h-[620px] rounded-lg shadow-lg overflow-auto">
+          <div className="bg-secondary h-[620px] rounded-lg shadow-lg overflow-auto">
             {selectedArtistId ? (
               <ArtistView artistId={selectedArtistId} />
             ) : (
@@ -62,7 +63,7 @@ const Dashboard: React.FC = () => {
 
         {/* Right Box */}
         <div className="hidden lg:block w-full lg:w-1/4 p-2">
-          <div className="bg-base-200 h-[620px] rounded-lg shadow-lg overflow-auto">
+          <div className="bg-secondary h-[620px] rounded-lg shadow-lg overflow-auto">
             <div className="p-4">
               Box 3 Content
             </div>
@@ -70,18 +71,13 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Mobile View */}
-        <div className="block lg:hidden w-full h-[620px] bg-base-200 rounded-lg shadow-lg overflow-auto">
+        <div className="block lg:hidden w-full h-[620px] bg-secondary rounded-lg shadow-lg overflow-auto">
           {renderBox()}
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="p-4 bg-neutral text-center text-neutral-content">
-        <p>Footer Content</p>
-      </div>
-
-      {/* Mobile Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-neutral p-2 flex justify-around">
+      {/* Mobile Navigation - Move above player */}
+      <div className="lg:hidden fixed bottom-[88px] left-0 right-0 bg-secondary p-2 flex justify-around">
         <button 
           className={`btn ${activeBox === 0 ? 'btn-primary' : 'btn-ghost'}`} 
           onClick={() => setActiveBox(0)}
@@ -101,6 +97,9 @@ const Dashboard: React.FC = () => {
           Box 3
         </button>
       </div>
+
+      {/* Spotify Player */}
+      <SpotifyPlayer />
     </div>
   );
 };

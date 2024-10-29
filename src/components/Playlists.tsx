@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 
 interface Track {
   track: {
     id: string;
+    uri: string; // for webplayer
     name: string;
     artists: Array<{ 
       id: string;
@@ -45,9 +46,9 @@ interface PlaylistsProps {
 
 const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
 
-  // Query for playlists
   const { data: playlists, isLoading, error } = useQuery({
     queryKey: ['playlists'],
     queryFn: async () => {
@@ -56,7 +57,7 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
       }
 
       try {
-        const response = await fetch('http://localhost:4000/api/spotify/me/playlists?limit=50', {
+        const response = await fetch('http://localhost:4000/api/spotify/playlists?limit=50', {
           headers: {
             'Authorization': `Bearer ${user.accessToken}`
           }
@@ -78,7 +79,6 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Query for playlist details
   const { data: playlistDetails, isLoading: isLoadingDetails } = useQuery({
     queryKey: ['playlist', selectedPlaylist?.id],
     queryFn: async () => {
@@ -99,8 +99,60 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
     enabled: !!selectedPlaylist?.id && !!user?.accessToken,
   });
 
+  const handlePlayTrack = async (trackUri: string) => {
+    if (!user?.accessToken) return;
+  
+    try {
+      const deviceId = queryClient.getQueryData(['spotifyDeviceId']);
+      
+      if (!deviceId) {
+        console.error('No active device found');
+        return;
+      }
+  
+      console.log('Starting playback with device ID:', deviceId);
+  
+      // First, ensure our device is active
+      await fetch('https://api.spotify.com/v1/me/player', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${user.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          device_ids: [deviceId],
+          play: false,
+        })
+      });
+  
+      // Small delay to ensure device is ready
+      await new Promise(resolve => setTimeout(resolve, 500));
+  
+      // Then start playback
+      const response = await fetch('http://localhost:4000/api/spotify/player/play', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${user.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          deviceId,
+          trackUri
+        })
+      });
+  
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to start playback');
+      }
+  
+    } catch (error) {
+      console.error('Error playing track:', error);
+    }
+  };
+
   const handleArtistClick = (e: React.MouseEvent, artistId: string) => {
-    e.stopPropagation(); // Prevent playlist selection when clicking artist
+    e.stopPropagation();
     onArtistSelect?.(artistId);
   };
 
@@ -159,7 +211,8 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
               {playlistDetails.tracks.items.map((item, index) => (
                 <div 
                   key={item.track.id || index}
-                  className="flex items-center p-2 hover:bg-base-200 rounded-lg"
+                  className="flex items-center p-2 hover:bg-base-200 rounded-lg cursor-pointer"
+                  onClick={() => handlePlayTrack(item.track.uri)}
                 >
                   {item.track.album.images?.[0] && (
                     <img 
