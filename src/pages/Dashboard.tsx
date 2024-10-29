@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Header from '../components/Header';
 import ArtistView from '../components/ArtistView';
+import Playlists from '../components/Playlists'; 
 
 const Dashboard: React.FC = () => {
   const [activeBox, setActiveBox] = useState(0);
@@ -8,16 +9,16 @@ const Dashboard: React.FC = () => {
 
   const handleArtistSelect = (artistId: string) => {
     setSelectedArtistId(artistId);
-    setActiveBox(1); // Activate the middle box when an artist is selected
+    setActiveBox(1);
   };
 
   const renderBox = () => {
     switch (activeBox) {
       case 0:
-        return <div className="p-4 bg-primary text-white">Box 1 Content</div>;
+        return <Playlists />; // Render Playlists in mobile view
       case 1:
         return (
-          <div className="p-4 bg-secondary text-white">
+          <div className="p-4">
             {selectedArtistId ? (
               <ArtistView artistId={selectedArtistId} />
             ) : (
@@ -26,9 +27,9 @@ const Dashboard: React.FC = () => {
           </div>
         );
       case 2:
-        return <div className="p-4 bg-accent text-white">Box 3 Content</div>;
+        return <div className="p-4">Box 3 Content</div>;
       default:
-        return <div className="p-4 bg-primary text-white">Box 1 Content</div>;
+        return <Playlists />;
     }
   };
 
@@ -39,40 +40,66 @@ const Dashboard: React.FC = () => {
 
       {/* Dashboard Content */}
       <div className="flex-grow flex flex-col lg:flex-row justify-around items-center p-4 overflow-hidden">
+        {/* Left Box - Playlists */}
         <div className="hidden lg:block w-full lg:w-1/4 p-2">
-          <div className="artboard artboard-demo bg-primary text-white h-[800px] rounded-lg shadow-lg overflow-auto">
-            Box 1 Content
+          <div className="bg-base-200 h-[620px] rounded-lg shadow-lg overflow-auto">
+            <Playlists />
           </div>
         </div>
+
+        {/* Middle Box - Artist View */}
         <div className="hidden lg:block w-full lg:w-2/4 p-2">
-          <div className="artboard artboard-demo bg-primary text-white h-[800px] rounded-lg shadow-lg overflow-auto">
+          <div className="bg-base-200 h-[620px] rounded-lg shadow-lg overflow-auto">
             {selectedArtistId ? (
               <ArtistView artistId={selectedArtistId} />
             ) : (
-              "Box 2 content"
+              <div className="flex items-center justify-center h-full text-base-content/70">
+                Select an artist to view details
+              </div>
             )}
           </div>
         </div>
+
+        {/* Right Box */}
         <div className="hidden lg:block w-full lg:w-1/4 p-2">
-          <div className="artboard artboard-demo bg-primary text-white h-[800px] rounded-lg shadow-lg overflow-auto">
-            Box 3 Content
+          <div className="bg-base-200 h-[620px] rounded-lg shadow-lg overflow-auto">
+            <div className="p-4">
+              Box 3 Content
+            </div>
           </div>
         </div>
-        <div className="block lg:hidden w-full p-2 h-full">
+
+        {/* Mobile View */}
+        <div className="block lg:hidden w-full h-[620px] bg-base-200 rounded-lg shadow-lg overflow-auto">
           {renderBox()}
         </div>
       </div>
 
       {/* Footer */}
-      <div className="p-4 bg-neutral text-center">
+      <div className="p-4 bg-neutral text-center text-neutral-content">
         <p>Footer Content</p>
       </div>
 
-      {/* Buttons for smaller screens */}
+      {/* Mobile Navigation */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-neutral p-2 flex justify-around">
-        <button className="btn btn-primary" onClick={() => setActiveBox(0)}>Box 1</button>
-        <button className="btn btn-secondary" onClick={() => setActiveBox(1)}>Box 2</button>
-        <button className="btn btn-accent" onClick={() => setActiveBox(2)}>Box 3</button>
+        <button 
+          className={`btn ${activeBox === 0 ? 'btn-primary' : 'btn-ghost'}`} 
+          onClick={() => setActiveBox(0)}
+        >
+          Playlists
+        </button>
+        <button 
+          className={`btn ${activeBox === 1 ? 'btn-primary' : 'btn-ghost'}`} 
+          onClick={() => setActiveBox(1)}
+        >
+          Artist
+        </button>
+        <button 
+          className={`btn ${activeBox === 2 ? 'btn-primary' : 'btn-ghost'}`} 
+          onClick={() => setActiveBox(2)}
+        >
+          Box 3
+        </button>
       </div>
     </div>
   );
