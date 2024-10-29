@@ -9,13 +9,13 @@ const Dashboard: React.FC = () => {
 
   const handleArtistSelect = (artistId: string) => {
     setSelectedArtistId(artistId);
-    setActiveBox(1);
+    setActiveBox(1); // Switch to artist view in mobile
   };
 
   const renderBox = () => {
     switch (activeBox) {
       case 0:
-        return <Playlists />; // Render Playlists in mobile view
+        return <Playlists onArtistSelect={handleArtistSelect} />; // Pass the handler
       case 1:
         return (
           <div className="p-4">
@@ -29,7 +29,7 @@ const Dashboard: React.FC = () => {
       case 2:
         return <div className="p-4">Box 3 Content</div>;
       default:
-        return <Playlists />;
+        return <Playlists onArtistSelect={handleArtistSelect} />; // Pass the handler
     }
   };
 
@@ -43,7 +43,7 @@ const Dashboard: React.FC = () => {
         {/* Left Box - Playlists */}
         <div className="hidden lg:block w-full lg:w-1/4 p-2">
           <div className="bg-base-200 h-[620px] rounded-lg shadow-lg overflow-auto">
-            <Playlists />
+            <Playlists onArtistSelect={handleArtistSelect} />
           </div>
         </div>
 

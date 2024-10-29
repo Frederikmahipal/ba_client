@@ -1,6 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
+
+interface Track {
+  track: {
+    id: string;
+    name: string;
+    artists: Array<{ 
+      id: string;
+      name: string 
+    }>;
+    album: {
+      images: Array<{ url: string }>;
+    };
+    duration_ms: number;
+  };
+}
 
 interface Playlist {
   id: string;
@@ -11,9 +26,28 @@ interface Playlist {
   };
 }
 
-const Playlists: React.FC = () => {
-  const { user } = useAuth();
+interface PlaylistDetails {
+  id: string;
+  name: string;
+  images: Array<{ url: string }>;
+  tracks: {
+    items: Track[];
+    total: number;
+  };
+  owner: {
+    display_name: string;
+  };
+}
 
+interface PlaylistsProps {
+  onArtistSelect?: (artistId: string) => void;
+}
+
+const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
+  const { user } = useAuth();
+  const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
+
+  // Query for playlists
   const { data: playlists, isLoading, error } = useQuery({
     queryKey: ['playlists'],
     queryFn: async () => {
@@ -34,7 +68,6 @@ const Playlists: React.FC = () => {
         }
 
         const data = await response.json();
-        console.log('Playlists response:', data); // Debug log
         return data.items as Playlist[];
       } catch (err) {
         console.error('Playlist fetch error:', err);
@@ -44,6 +77,32 @@ const Playlists: React.FC = () => {
     enabled: !!user?.accessToken,
     staleTime: 5 * 60 * 1000,
   });
+
+  // Query for playlist details
+  const { data: playlistDetails, isLoading: isLoadingDetails } = useQuery({
+    queryKey: ['playlist', selectedPlaylist?.id],
+    queryFn: async () => {
+      if (!selectedPlaylist?.id || !user?.accessToken) return null;
+      
+      const response = await fetch(`http://localhost:4000/api/spotify/playlist/${selectedPlaylist.id}`, {
+        headers: {
+          'Authorization': `Bearer ${user.accessToken}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch playlist details');
+      }
+      
+      return response.json() as Promise<PlaylistDetails>;
+    },
+    enabled: !!selectedPlaylist?.id && !!user?.accessToken,
+  });
+
+  const handleArtistClick = (e: React.MouseEvent, artistId: string) => {
+    e.stopPropagation(); // Prevent playlist selection when clicking artist
+    onArtistSelect?.(artistId);
+  };
 
   if (isLoading) {
     return (
@@ -60,6 +119,81 @@ const Playlists: React.FC = () => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <p className="text-center">{error instanceof Error ? error.message : 'Error loading playlists'}</p>
+      </div>
+    );
+  }
+
+  if (selectedPlaylist) {
+    return (
+      <div className="p-4">
+        <button 
+          onClick={() => setSelectedPlaylist(null)} 
+          className="mb-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+        >
+          Back to Playlists
+        </button>
+        
+        {isLoadingDetails ? (
+          <div className="flex justify-center">
+            <span className="loading loading-spinner loading-lg text-primary"></span>
+          </div>
+        ) : playlistDetails ? (
+          <>
+            <div className="flex items-center gap-4 mb-6">
+              {playlistDetails.images?.[0] && (
+                <img 
+                  src={playlistDetails.images[0].url} 
+                  alt={playlistDetails.name}
+                  className="w-32 h-32 object-cover rounded-lg shadow-lg"
+                />
+              )}
+              <div>
+                <h2 className="text-2xl font-bold">{playlistDetails.name}</h2>
+                <p className="text-sm opacity-75">
+                  Created by {playlistDetails.owner.display_name} • {playlistDetails.tracks.total} tracks
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {playlistDetails.tracks.items.map((item, index) => (
+                <div 
+                  key={item.track.id || index}
+                  className="flex items-center p-2 hover:bg-base-200 rounded-lg"
+                >
+                  {item.track.album.images?.[0] && (
+                    <img 
+                      src={item.track.album.images[0].url}
+                      alt={item.track.name}
+                      className="w-10 h-10 object-cover rounded mr-3"
+                    />
+                  )}
+                  <div>
+                    <div className="font-medium">{item.track.name}</div>
+                    <div className="text-sm opacity-75">
+                      {item.track.artists.map((artist, i) => (
+                        <React.Fragment key={artist.id}>
+                          {i > 0 && ', '}
+                          <button
+                            onClick={(e) => handleArtistClick(e, artist.id)}
+                            className="hover:text-primary hover:underline"
+                          >
+                            {artist.name}
+                          </button>
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="ml-auto text-sm opacity-75">
+                    {formatDuration(item.track.duration_ms)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p>Failed to load playlist details</p>
+        )}
       </div>
     );
   }
@@ -81,6 +215,7 @@ const Playlists: React.FC = () => {
           <div 
             key={playlist.id}
             className="flex items-center p-2 hover:bg-base-300 rounded-lg cursor-pointer transition-colors"
+            onClick={() => setSelectedPlaylist(playlist)}
           >
             <div className="w-10 h-10 mr-3">
               {playlist.images && playlist.images.length > 0 ? (
@@ -106,6 +241,12 @@ const Playlists: React.FC = () => {
       </div>
     </div>
   );
+};
+
+const formatDuration = (ms: number): string => {
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 };
 
 export default Playlists;
