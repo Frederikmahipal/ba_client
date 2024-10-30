@@ -14,58 +14,62 @@ const Signup: React.FC = () => {
   };
 
   return (
-    <form 
-      onSubmit={handleSubmit} 
-      className="flex flex-col space-y-4 bg-base-100 p-8 rounded-lg shadow-md"
-    >
-      {signupError && (
-        <div className="alert alert-error">
-          <div className="flex-1">
-            <label>{signupError}</label>
+    <div className="min-h-[450px]"> {/* Fixed container height */}
+      <form 
+        onSubmit={handleSubmit} 
+        className="flex flex-col space-y-4 bg-base-100 p-6 rounded-lg"
+      >
+        {signupError && (
+          <div className="alert alert-error">
+            <div className="flex-1">
+              <label>{signupError}</label>
+            </div>
           </div>
+        )}
+        <div className="form-control">
+          <label htmlFor="signup-name" className="label">
+            <span className="label-text">Your Name:</span>
+          </label>
+          <input
+            type="text"
+            id="signup-name"
+            name="name"
+            placeholder="Your Name"
+            className="input input-bordered"
+            required
+          />
         </div>
-      )}
-      <div className="form-control">
-        <label htmlFor="signup-name" className="label">
-          <span className="label-text">Your Name:</span>
-        </label>
-        <input
-          type="text"
-          id="signup-name"
-          name="name"
-          placeholder="Your Name"
-          className="input input-bordered"
-          required
-        />
-      </div>
-      <div className="form-control">
-        <label htmlFor="signup-email" className="label">
-          <span className="label-text">Email:</span>
-        </label>
-        <input
-          type="email"
-          id="signup-email"
-          name="email"
-          placeholder="email@example.com"
-          className="input input-bordered"
-          required
-        />
-      </div>
-      <div className="form-control">
-        <label htmlFor="signup-password" className="label">
-          <span className="label-text">Password:</span>
-        </label>
-        <input
-          type="password"
-          id="signup-password"
-          name="password"
-          placeholder="Password"
-          className="input input-bordered"
-          required
-        />
-      </div>
-      <button type="submit" className="btn btn-primary w-full">Sign Up</button>
-    </form>
+        <div className="form-control">
+          <label htmlFor="signup-email" className="label">
+            <span className="label-text">Email:</span>
+          </label>
+          <input
+            type="email"
+            id="signup-email"
+            name="email"
+            placeholder="email@example.com"
+            className="input input-bordered"
+            required
+          />
+        </div>
+        <div className="form-control">
+          <label htmlFor="signup-password" className="label">
+            <span className="label-text">Password:</span>
+          </label>
+          <input
+            type="password"
+            id="signup-password"
+            name="password"
+            placeholder="Password"
+            className="input input-bordered"
+            required
+          />
+        </div>
+        <div className="mt-auto pt-4"> {/* Push button to bottom */}
+          <button type="submit" className="btn btn-primary w-full">Sign Up</button>
+        </div>
+      </form>
+    </div>
   );
 };
 

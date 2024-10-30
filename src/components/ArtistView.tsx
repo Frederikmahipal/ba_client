@@ -6,13 +6,6 @@ interface ArtistViewProps {
   artistId: string;
 }
 
-interface Artist {
-  name: string;
-  images: { url: string }[];
-  genres: string[];
-  followers: { total: number };
-  popularity: number;
-}
 
 interface Album {
   id: string;

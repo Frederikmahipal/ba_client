@@ -27,7 +27,6 @@ export const checkAuth = async (): Promise<User> => {
 
 export const spotifyLogin = (): void => {
   window.location.href = 'http://localhost:4000/auth/spotify/login';
-  console.log('Redirecting to Spotify login');
 };
 
 export default api;

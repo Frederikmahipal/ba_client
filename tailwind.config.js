@@ -6,6 +6,6 @@ export default {
   },
   plugins: [require('daisyui')],
   daisyui: {
-    themes: ["cupcake", "synthwave"], // Include the themes you want
+    themes: ["corporate", "business"], // Include the themes you want
   },
 }

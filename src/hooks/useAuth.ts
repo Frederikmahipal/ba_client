@@ -17,11 +17,14 @@ export const useAuth = () => {
     retry: false,
   });
 
+  // Add this getter for the access token
+  const accessToken = user?.accessToken;
+
   const loginMutation = useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) => login(email, password),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
-      navigate('/'); // Navigate to home or dashboard after successful login
+      navigate('/');
     },
     onError: (error: any) => {
       setLoginError(error.message || 'Login failed');
@@ -33,7 +36,7 @@ export const useAuth = () => {
       signup(name, email, password),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
-      navigate('/'); // Navigate after successful signup
+      navigate('/');
     },
     onError: (error: any) => {
       setSignupError(error.message || 'Signup failed');
@@ -54,6 +57,7 @@ export const useAuth = () => {
 
   return {
     user,
+    accessToken, // Add this to the return object
     isCheckingAuth,
     login: loginMutation.mutate,
     signup: signupMutation.mutate,
