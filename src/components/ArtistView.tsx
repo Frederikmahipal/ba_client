@@ -64,7 +64,7 @@ const ArtistView: React.FC<ArtistViewProps> = ({ artistId }) => {
         <h3 className="text-2xl font-bold mb-4">Albums & Singles</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {albums.map((album: Album) => (
-            <div key={album.id} className="bg-gray-800 rounded-lg overflow-hidden shadow-lg">
+            <div key={album.id} className="bg-primary rounded-lg overflow-hidden shadow-lg">
               <img src={album.images[0]?.url} alt={album.name} className="w-full h-40 object-cover" />
               <div className="p-4">
                 <p className="font-bold text-sm mb-1 truncate">{album.name}</p>

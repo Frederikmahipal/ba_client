@@ -1,7 +1,6 @@
 // src/components/Header.tsx
 import React from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { useTheme } from '../contexts/ThemeContext'; // Corrected import name
 import SearchBar from './SearchBar';
 
 interface HeaderProps {
@@ -10,7 +9,6 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onArtistSelect }) => {
   const { logout } = useAuth();
-  const { toggleTheme } = useTheme(); // Corrected usage
 
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
 
@@ -45,7 +43,6 @@ const Header: React.FC<HeaderProps> = ({ onArtistSelect }) => {
           <ul className="menu dropdown-content mt-3 p-2 shadow bg-base-100 rounded-box w-52">
             <li><button>Profile</button></li>
             <li><button>Settings</button></li>
-            <li><button onClick={toggleTheme}>Toggle Theme</button></li>
             <li><button onClick={handleLogout}>Logout</button></li>
           </ul>
         )}
