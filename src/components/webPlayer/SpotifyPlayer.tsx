@@ -34,6 +34,25 @@ const SpotifyPlayer: React.FC = () => {
   const [current_track, setTrack] = useState<any>(null);
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
 
+  const fetchCurrentPlayback = async (accessToken: string) => {
+    try {
+      const response = await fetch('https://api.spotify.com/v1/me/player', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+      
+      if (response.status === 200) {
+        const data = await response.json();
+        return data;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching current playback:', error);
+      return null;
+    }
+  };
+
   useQuery({
     queryKey: ['spotifyPlayer'],
     queryFn: async () => {
@@ -83,19 +102,89 @@ const SpotifyPlayer: React.FC = () => {
           queryClient.setQueryData(['spotifyDeviceId'], device_id);
           
           try {
-            await fetch('https://api.spotify.com/v1/me/player', {
-              method: 'PUT',
-              headers: {
-                'Authorization': `Bearer ${user?.accessToken}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                device_ids: [device_id],
-                play: false,
-              })
-            });
+            // Add initial delay to ensure player is ready
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // First fetch current playback state
+            const currentPlayback = await fetchCurrentPlayback(user?.accessToken || '');
+            
+            if (!currentPlayback || !currentPlayback.item) {
+              // If there's no current playback, try to get recently played tracks
+              const recentResponse = await fetch('https://api.spotify.com/v1/me/player/recently-played?limit=1', {
+                headers: {
+                  'Authorization': `Bearer ${user?.accessToken}`,
+                },
+              });
+              
+              if (recentResponse.ok) {
+                const recentTracks = await recentResponse.json();
+                if (recentTracks.items?.length > 0) {
+                  // First, transfer to our device
+                  await fetch('https://api.spotify.com/v1/me/player', {
+                    method: 'PUT',
+                    headers: {
+                      'Authorization': `Bearer ${user?.accessToken}`,
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      device_ids: [device_id],
+                      play: false,
+                    })
+                  });
+        
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                  
+                  // Then start playing the most recently played track
+                  await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device_id}`, {
+                    method: 'PUT',
+                    headers: {
+                      'Authorization': `Bearer ${user?.accessToken}`,
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      uris: [recentTracks.items[0].track.uri],
+                      position_ms: 0
+                    }),
+                  });
+                }
+              }
+            } else {
+              // Transfer playback to our device
+              await fetch('https://api.spotify.com/v1/me/player', {
+                method: 'PUT',
+                headers: {
+                  'Authorization': `Bearer ${user?.accessToken}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  device_ids: [device_id],
+                  play: false,
+                })
+              });
+        
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              
+              // Start playing with the exact position
+              await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device_id}`, {
+                method: 'PUT',
+                headers: {
+                  'Authorization': `Bearer ${user?.accessToken}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  uris: [currentPlayback.item.uri],
+                  position_ms: currentPlayback.progress_ms || 0
+                })
+              });
+        
+              // Set the correct play state
+              if (!currentPlayback.is_playing) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                await player?.pause();
+              }
+            }
+            
             setActive(true);
-            console.log('Device activated successfully');
           } catch (error) {
             console.error('Error activating device:', error);
           }
@@ -119,7 +208,6 @@ const SpotifyPlayer: React.FC = () => {
         const connected = await newPlayer.connect();
         
         if (connected) {
-          console.log('Successfully connected to Spotify!');
           setPlayer(newPlayer);
         } else {
           throw new Error('Failed to connect to Spotify');
@@ -173,10 +261,11 @@ const SpotifyPlayer: React.FC = () => {
             isPaused={playerState?.paused || false}
           />
           <ProgressBar
-            position={playerState?.position || 0}
-            duration={playerState?.duration || 0}
-            onSeek={(position) => player?.seek(position)}
-          />
+  position={playerState?.position || 0}
+  duration={playerState?.duration || 0}
+  onSeek={(position) => player?.seek(position)}
+  isPaused={playerState?.paused || false}  // Add this prop
+/>
         </div>
       </div>
     </div>

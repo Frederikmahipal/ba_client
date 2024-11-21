@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
 
-const Login: React.FC = () => {
+const Login = () => {
   const { login, spotifyLogin, loginError } = useAuth();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
