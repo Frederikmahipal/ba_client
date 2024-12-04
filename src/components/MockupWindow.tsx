@@ -34,8 +34,8 @@ const MockupWindow: React.FC = () => {
         </div>
 
         {/* Footer Mock */}
-        <div className="w-full bg-neutral/20 rounded-lg p-2 flex items-center justify-center">
-          <span className="text-neutral-content/50">player here</span>
+        <div className="w-full bg-neutral/20 rounded-lg p-6 flex items-center justify-center">
+          <span className="text-neutral-content/50"></span>
         </div>
       </div>
     </div>
