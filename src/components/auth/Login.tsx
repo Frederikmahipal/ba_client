@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
 
-const Login: React.FC = () => {
+const Login = () => {
   const { login, spotifyLogin, loginError } = useAuth();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -52,8 +52,8 @@ const Login: React.FC = () => {
           />
         </div>
         <div className="mt-auto pt-4"> {/* Push buttons to bottom */}
-          <button type="submit" className="btn btn-primary w-full mb-2">Login</button>
-          <button type="button" onClick={spotifyLogin} className="btn btn-secondary w-full">
+          <button type="submit" className="btn btn-secondary w-full mb-2">Login</button>
+          <button type="button" onClick={spotifyLogin} className="btn btn-accent w-full">
             Login with Spotify
           </button>
         </div>

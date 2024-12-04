@@ -60,7 +60,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onArtistSelect }) => {
         value={query}
         onChange={handleInputChange}
         placeholder="Search Spotify..."
-        className="input input-bordered w-full"
+        className="input input-bordered w-full bg-primary"
       />
       
       {isLoading && <p className="mt-2">Loading...</p>}

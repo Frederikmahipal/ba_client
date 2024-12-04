@@ -20,7 +20,7 @@ const Auth: React.FC = () => {
 
                 {/* Buttons to open the drawer */}
                 <div className="flex flex-col space-y-2">
-                  <label htmlFor="my-drawer" className="btn btn-secondary" onClick={() => setActiveForm('login')}>
+                  <label htmlFor="my-drawer" className="btn btn-accent" onClick={() => setActiveForm('login')}>
                     Login
                   </label>
                   <label htmlFor="my-drawer" className="btn btn-secondary" onClick={() => setActiveForm('signup')}>

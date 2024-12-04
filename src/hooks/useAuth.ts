@@ -57,7 +57,7 @@ export const useAuth = () => {
 
   return {
     user,
-    accessToken, // Add this to the return object
+    accessToken, 
     isCheckingAuth,
     login: loginMutation.mutate,
     signup: signupMutation.mutate,

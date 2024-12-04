@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
+import { usePlayback } from '../utils/playback';
 
 interface Track {
-  track: {
+  id: string;
+  uri: string;
+  name: string;
+  artists: Array<{ 
     id: string;
-    uri: string; // for webplayer
+    name: string 
+  }>;
+  album: {
+    id: string;
     name: string;
-    artists: Array<{ 
-      id: string;
-      name: string 
-    }>;
-    album: {
-      images: Array<{ url: string }>;
-    };
-    duration_ms: number;
+    images: Array<{ url: string }>;
   };
+  duration_ms: number;
 }
 
 interface Playlist {
@@ -32,7 +33,7 @@ interface PlaylistDetails {
   name: string;
   images: Array<{ url: string }>;
   tracks: {
-    items: Track[];
+    items: Array<{ track: Track }>;
     total: number;
   };
   owner: {
@@ -46,7 +47,7 @@ interface PlaylistsProps {
 
 const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const { handlePlayTrack } = usePlayback();
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
 
   const { data: playlists, isLoading, error } = useQuery({
@@ -99,61 +100,19 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
     enabled: !!selectedPlaylist?.id && !!user?.accessToken,
   });
 
-  const handlePlayTrack = async (trackUri: string) => {
-    if (!user?.accessToken) return;
-  
-    try {
-      const deviceId = queryClient.getQueryData(['spotifyDeviceId']);
-      
-      if (!deviceId) {
-        console.error('No active device found');
-        return;
+  const handleTrackClick = (trackItem: { track: Track }) => {
+    const { track } = trackItem;
+    handlePlayTrack(track.uri, {
+      id: track.id,
+      uri: track.uri,
+      name: track.name,
+      artists: track.artists,
+      album: {
+        id: track.album.id,
+        name: track.album.name,
+        images: track.album.images
       }
-  
-      console.log('Starting playback with device ID:', deviceId);
-  
-      // First, ensure our device is active
-      await fetch('https://api.spotify.com/v1/me/player', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${user.accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          device_ids: [deviceId],
-          play: false,
-        })
-      });
-  
-      // Small delay to ensure device is ready
-      await new Promise(resolve => setTimeout(resolve, 500));
-  
-      // Then start playback
-      const response = await fetch('http://localhost:4000/api/spotify/player/play', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${user.accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          deviceId,
-          trackUri
-        })
-      });
-  
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to start playback');
-      }
-  
-    } catch (error) {
-      console.error('Error playing track:', error);
-    }
-  };
-
-  const handleArtistClick = (e: React.MouseEvent, artistId: string) => {
-    e.stopPropagation();
-    onArtistSelect?.(artistId);
+    });
   };
 
   if (isLoading) {
@@ -175,7 +134,7 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
     );
   }
 
-  if (selectedPlaylist) {
+  if (selectedPlaylist && playlistDetails) {
     return (
       <div className="p-4">
         <button 
@@ -189,7 +148,7 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
           <div className="flex justify-center">
             <span className="loading loading-spinner loading-lg text-primary"></span>
           </div>
-        ) : playlistDetails ? (
+        ) : (
           <>
             <div className="flex items-center gap-4 mb-6">
               {playlistDetails.images?.[0] && (
@@ -210,9 +169,9 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
             <div className="space-y-2">
               {playlistDetails.tracks.items.map((item, index) => (
                 <div 
-                  key={item.track.id || index}
+                  key={`${item.track.id}-${index}`}
                   className="flex items-center p-2 hover:bg-base-200 rounded-lg cursor-pointer"
-                  onClick={() => handlePlayTrack(item.track.uri)}
+                  onClick={() => handleTrackClick(item)}
                 >
                   {item.track.album.images?.[0] && (
                     <img 
@@ -228,7 +187,10 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
                         <React.Fragment key={artist.id}>
                           {i > 0 && ', '}
                           <button
-                            onClick={(e) => handleArtistClick(e, artist.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onArtistSelect?.(artist.id);
+                            }}
                             className="hover:text-primary hover:underline"
                           >
                             {artist.name}
@@ -244,8 +206,6 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
               ))}
             </div>
           </>
-        ) : (
-          <p>Failed to load playlist details</p>
         )}
       </div>
     );
@@ -264,33 +224,39 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4">Your Playlists</h2>
       <div className="space-y-2">
-        {playlists.map((playlist) => (
-          <div 
-            key={playlist.id}
-            className="flex items-center p-2 hover:bg-base-300 rounded-lg cursor-pointer transition-colors"
-            onClick={() => setSelectedPlaylist(playlist)}
-          >
-            <div className="w-10 h-10 mr-3">
-              {playlist.images && playlist.images.length > 0 ? (
-                <img 
-                  src={playlist.images[0].url} 
-                  alt={playlist.name}
-                  className="w-full h-full object-cover rounded"
-                />
-              ) : (
-                <div className="w-full h-full bg-base-300 rounded flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                  </svg>
-                </div>
-              )}
+        {playlists?.map((playlist) => {
+          if (!playlist) return null;
+
+          return (
+            <div 
+              key={playlist.id}
+              className="flex items-center p-2 hover:bg-base-300 rounded-lg cursor-pointer transition-colors"
+              onClick={() => setSelectedPlaylist(playlist)}
+            >
+              <div className="w-10 h-10 mr-3">
+                {playlist.images && playlist.images.length > 0 ? (
+                  <img 
+                    src={playlist.images[0].url} 
+                    alt={playlist.name}
+                    className="w-full h-full object-cover rounded"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-base-300 rounded flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium">{playlist.name}</h3>
+                <p className="text-sm opacity-70">
+                  {playlist.tracks?.total || 0} tracks
+                </p>
+              </div>
             </div>
-            <div className="flex-1">
-              <h3 className="font-medium">{playlist.name}</h3>
-              <p className="text-sm opacity-70">{playlist.tracks.total} tracks</p>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

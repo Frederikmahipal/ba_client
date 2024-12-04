@@ -4,5 +4,6 @@ export interface User {
     email: string;
     password?: string;
     spotifyId?: string;
+    profilePicture?: string;
     accessToken?: string;
 }
