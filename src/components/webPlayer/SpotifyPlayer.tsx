@@ -4,6 +4,8 @@ import { useAuth } from '../../hooks/useAuth';
 import PlayerControls from './PlayerControls';
 import TrackInfo from './TrackInfo';
 import ProgressBar from './ProgressBar';
+import VolumeControl from './VolumeControl';
+
 
 declare global {
   interface Window {
@@ -251,9 +253,12 @@ const SpotifyPlayer: React.FC = () => {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-secondary">
-      <div className="container mx-auto px-4 py-2">
-        <div className="flex items-center justify-between">
+    <div className="px-4 py-1">
+      <div className="flex items-center justify-between">
+        <div className="w-[30%]">
           <TrackInfo currentTrack={current_track} />
+        </div>
+        <div className="flex flex-col items-center w-[40%]">
           <PlayerControls
             onPlayPause={handlePlayPause}
             onNext={handleNext}
@@ -261,14 +266,18 @@ const SpotifyPlayer: React.FC = () => {
             isPaused={playerState?.paused || false}
           />
           <ProgressBar
-  position={playerState?.position || 0}
-  duration={playerState?.duration || 0}
-  onSeek={(position) => player?.seek(position)}
-  isPaused={playerState?.paused || false}  // Add this prop
-/>
+            position={playerState?.position || 0}
+            duration={playerState?.duration || 0}
+            onSeek={(position) => player?.seek(position)}
+            isPaused={playerState?.paused || false}
+          />
+        </div>
+        <div className="w-[30%] flex justify-end">
+          <VolumeControl player={player} />
         </div>
       </div>
     </div>
+  </div>
   );
 };
 

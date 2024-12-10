@@ -100,9 +100,11 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
     enabled: !!selectedPlaylist?.id && !!user?.accessToken,
   });
 
-  const handleTrackClick = (trackItem: { track: Track }) => {
+  const handleTrackClick = (trackItem: { track: Track }, index: number) => {
+    if (!selectedPlaylist) return;
+    
     const { track } = trackItem;
-    handlePlayTrack(track.uri, {
+    const completeTrack = {
       id: track.id,
       uri: track.uri,
       name: track.name,
@@ -112,6 +114,13 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
         name: track.album.name,
         images: track.album.images
       }
+    };
+
+    handlePlayTrack(track.uri, completeTrack, {
+      type: 'playlist',
+      id: selectedPlaylist.id,
+      uri: `spotify:playlist:${selectedPlaylist.id}`,
+      position: index
     });
   };
 
@@ -126,20 +135,23 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
   if (error) {
     return (
       <div className="p-4 text-error flex flex-col items-center justify-center h-full">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <p className="text-center">{error instanceof Error ? error.message : 'Error loading playlists'}</p>
+        <p className="mb-4">Failed to load playlists</p>
+        <button 
+          className="btn btn-error"
+          onClick={() => window.location.reload()}
+        >
+          Retry
+        </button>
       </div>
     );
   }
 
-  if (selectedPlaylist && playlistDetails) {
+  if (playlistDetails) {
     return (
       <div className="p-4">
         <button 
-          onClick={() => setSelectedPlaylist(null)} 
-          className="mb-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+          onClick={() => setSelectedPlaylist(null)}
+          className="btn btn-ghost mb-4"
         >
           Back to Playlists
         </button>
@@ -171,7 +183,7 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
                 <div 
                   key={`${item.track.id}-${index}`}
                   className="flex items-center p-2 hover:bg-base-200 rounded-lg cursor-pointer"
-                  onClick={() => handleTrackClick(item)}
+                  onClick={() => handleTrackClick(item, index)}
                 >
                   {item.track.album.images?.[0] && (
                     <img 

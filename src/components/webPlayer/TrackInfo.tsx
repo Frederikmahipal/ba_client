@@ -20,8 +20,8 @@ const TrackInfo: React.FC<TrackInfoProps> = ({ currentTrack }) => (
       />
     )}
     <div>
-      <div className="font-medium">{currentTrack?.name}</div>
-      <div className="text-sm opacity-70">
+      <div className="font-medium text-white">{currentTrack?.name}</div>
+      <div className="text-sm text-gray-400">
         {currentTrack?.artists.map((artist) => artist.name).join(', ')}
       </div>
     </div>
