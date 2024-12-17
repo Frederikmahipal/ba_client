@@ -1,44 +1,79 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import ArtistView from '../components/ArtistView';
 import Playlists from '../components/Playlists';
 import SpotifyPlayer from '../components/webPlayer/SpotifyPlayer';
 import RecentlyPlayed from '../components/RecentlyPlayed';
+import Feed from '../components/Feed';
+import AlbumView from '../components/AlbumView';
 
 const Dashboard: React.FC = () => {
   const [activeBox, setActiveBox] = useState(0);
   const [selectedArtistId, setSelectedArtistId] = useState<string | null>(null);
+  const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
   const [isArtistViewOpen, setArtistViewOpen] = useState(false);
+  const [isAlbumViewOpen, setAlbumViewOpen] = useState(false);
+
+  useEffect(() => {
+    const handleRouteChange = () => {
+      const artistMatch = window.location.pathname.match(/\/artist\/([^/]+)/);
+      if (artistMatch) {
+        const artistId = artistMatch[1];
+        setSelectedArtistId(artistId);
+        setArtistViewOpen(true);
+        setAlbumViewOpen(false);
+        setActiveBox(1);
+      }
+    };
+
+    handleRouteChange();
+
+    window.addEventListener('popstate', handleRouteChange);
+    return () => window.removeEventListener('popstate', handleRouteChange);
+  }, []);
 
   const handleArtistSelect = (artistId: string) => {
     setSelectedArtistId(artistId);
+    setSelectedAlbumId(null);
     setArtistViewOpen(true);
-    setActiveBox(1);
+    setAlbumViewOpen(false);
+  };
+
+  const handleAlbumSelect = (albumId: string) => {
+    setSelectedAlbumId(albumId);
+    setArtistViewOpen(false);
+    setAlbumViewOpen(true);
   };
 
   const handleCloseArtistView = () => {
     setArtistViewOpen(false);
     setSelectedArtistId(null);
+    setSelectedAlbumId(null);
     setActiveBox(0);
+    window.history.pushState(null, '', '/');
+  };
+
+  const handleCloseAlbumView = () => {
+    setAlbumViewOpen(false);
+    setSelectedAlbumId(null);
+    setActiveBox(0);
+    window.history.pushState(null, '', '/');
   };
 
   const renderMiddleBox = () => {
-    if (isArtistViewOpen && selectedArtistId) {
+    if (isAlbumViewOpen && selectedAlbumId) {
       return (
-        <div className="p-4">
-          <button 
-            onClick={handleCloseArtistView} 
-            className="mb-4 btn btn-sm btn-error"
-          >
-            Close
-          </button>
-          <ArtistView 
-            artistId={selectedArtistId}
-            onArtistSelect={handleArtistSelect}
-          />
-        </div>
+        <AlbumView 
+          albumId={selectedAlbumId} 
+          onArtistSelect={handleArtistSelect}
+          onClose={handleCloseAlbumView}
+        />
       );
     }
+    if (isArtistViewOpen && selectedArtistId) {
+      return <ArtistView artistId={selectedArtistId} onArtistSelect={handleArtistSelect} />;
+    }
+    return <Feed onArtistSelect={handleArtistSelect} onAlbumSelect={handleAlbumSelect} />;
   };
 
   const renderBox = () => {
@@ -49,20 +84,13 @@ const Dashboard: React.FC = () => {
         return (
           <div className="p-4">
             {selectedArtistId ? (
-              <>
-                <button 
-                  onClick={handleCloseArtistView} 
-                  className="mb-4 btn btn-sm btn-error"
-                >
-                  Close
-                </button>
-                <ArtistView 
-                  artistId={selectedArtistId}
-                  onArtistSelect={handleArtistSelect}
-                />
-              </>
+              <ArtistView 
+                artistId={selectedArtistId}
+                onArtistSelect={handleArtistSelect}
+                onClose={handleCloseArtistView}
+              />
             ) : (
-              "Select an artist to view details"
+              <Feed onArtistSelect={handleArtistSelect} onAlbumSelect={handleAlbumSelect} />
             )}
           </div>
         );
@@ -75,7 +103,10 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen overflow-hidden px-4">
-      <Header onArtistSelect={handleArtistSelect} />
+      <Header 
+        onArtistSelect={handleArtistSelect}
+        onAlbumSelect={handleAlbumSelect}
+      />
 
       <div className="flex-grow flex flex-col lg:flex-row justify-around items-center overflow-hidden pb-24">
         {/* Left Column - Playlists */}

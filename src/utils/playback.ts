@@ -1,6 +1,6 @@
 import { useAuth } from '../hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
-import { Track, PlayedTrack, PlaybackContext } from '../models/track';
+import { Track, PlaybackContext } from '../models/track';
 
 
 
@@ -15,8 +15,6 @@ interface PlayerState {
 export const usePlayback = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-
-  //TODO: only works for albums now
 
 
   const handlePlayTrack = async (

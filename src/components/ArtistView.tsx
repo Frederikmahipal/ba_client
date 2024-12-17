@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePlayback } from '../utils/playback';
 import api from '../services/api';
-import { Track, PlayedTrack } from '../models/track';
-import { Artist } from '../models/artist';
+import { Track } from '../models/track';
+import { User } from '../models/user';
+
 interface ArtistViewProps {
   artistId: string;
+  initialExpandedAlbumId?: string | null;
+  initialTrackNumber?: number | null;
   onArtistSelect?: (artistId: string) => void;
+  onClose?: () => void;
 }
 
 interface Album {
@@ -16,12 +20,22 @@ interface Album {
   images: { url: string }[];
 }
 
-
-
 interface AlbumDetails extends Album {
   tracks: {
     items: Track[];
   };
+}
+
+interface FollowedArtist {
+  spotifyArtistId: string;
+  name: string;
+  imageUrl: string;
+  followedAt: string;
+}
+
+interface FeedData {
+  followedUsers: User[];
+  followedArtists: FollowedArtist[];
 }
 
 const fetchArtistDetails = async (artistId: string) => {
@@ -38,13 +52,79 @@ const fetchArtistDetails = async (artistId: string) => {
   };
 };
 
-const ArtistView: React.FC<ArtistViewProps> = ({ artistId, onArtistSelect }) => {
-  const [expandedAlbumId, setExpandedAlbumId] = useState<string | null>(null);
+const ArtistView: React.FC<ArtistViewProps> = ({ 
+  artistId, 
+  initialExpandedAlbumId,
+  initialTrackNumber,
+  onArtistSelect,
+  onClose 
+}) => {
+  const [expandedAlbumId, setExpandedAlbumId] = useState<string | null>(initialExpandedAlbumId || null);
   const { handlePlayTrack } = usePlayback();
 
+  const queryClient = useQueryClient();
+
+  const followArtistMutation = useMutation({
+    mutationFn: async () => {
+      await api.post('/api/users/follow/artist', { artistId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['feed'] });
+    }
+  });
+
+  const unfollowArtistMutation = useMutation({
+    mutationFn: async () => {
+      await api.post('/api/users/unfollow/artist', { artistId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['feed'] });
+    }
+  });
+
+  const { data: feedData } = useQuery<FeedData>({
+    queryKey: ['feed'],
+    queryFn: async () => {
+      const response = await api.get('/api/users/feed');
+      return response.data;
+    }
+  });
+
+  const isFollowingArtist = () => {
+    return feedData?.followedArtists.some(
+      (followedArtist: FollowedArtist) => followedArtist.spotifyArtistId === artistId
+    );
+  };
+
+  const handleFollowClick = async () => {
+    try {
+      if (isFollowingArtist()) {
+        await unfollowArtistMutation.mutateAsync();
+      } else {
+        await followArtistMutation.mutateAsync();
+      }
+    } catch (error) {
+      console.error('Error following/unfollowing artist:', error);
+    }
+  };
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['artistDetails', artistId],
-    queryFn: () => fetchArtistDetails(artistId),
+    queryKey: ['artistDetails', artistId, initialExpandedAlbumId],
+    queryFn: async () => {
+      const data = await fetchArtistDetails(artistId);
+      
+      // Handle album section scrolling after data is fetched
+      if (initialExpandedAlbumId) {
+        setTimeout(() => {
+          const albumsSection = document.getElementById('albums-section');
+          if (albumsSection) {
+            albumsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
+      }
+      
+      return data;
+    }
   });
 
   const { data: albumDetails, isLoading: isLoadingAlbumDetails } = useQuery({
@@ -55,6 +135,19 @@ const ArtistView: React.FC<ArtistViewProps> = ({ artistId, onArtistSelect }) => 
       return response.data as AlbumDetails;
     },
     enabled: !!expandedAlbumId,
+    select: (data) => {
+      if (initialTrackNumber && data && expandedAlbumId === initialExpandedAlbumId) {
+        setTimeout(() => {
+          const trackElement = document.getElementById(`track-${initialTrackNumber}`);
+          if (trackElement) {
+            trackElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            trackElement.classList.add('bg-primary/20');
+            setTimeout(() => trackElement.classList.remove('bg-primary/20'), 2000);
+          }
+        }, 100);
+      }
+      return data;
+    }
   });
 
   const handleAlbumClick = (albumId: string) => {
@@ -65,8 +158,6 @@ const ArtistView: React.FC<ArtistViewProps> = ({ artistId, onArtistSelect }) => 
     e.stopPropagation();
     onArtistSelect?.(artistId);
   };
-
-
 
   const handleTrackClick = (track: Track, index: number) => {
     // Ensure track has complete album data
@@ -113,6 +204,28 @@ const ArtistView: React.FC<ArtistViewProps> = ({ artistId, onArtistSelect }) => 
 
   return (
     <div className="relative">
+      {onClose && (
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 btn btn-sm btn-circle btn-ghost"
+        >
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            className="h-6 w-6" 
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={2} 
+              d="M6 18L18 6M6 6l12 12" 
+            />
+          </svg>
+        </button>
+      )}
+
       {/* Hero Section */}
       <div className="relative h-[350px] mb-6">
         {artistImage && (
@@ -125,7 +238,22 @@ const ArtistView: React.FC<ArtistViewProps> = ({ artistId, onArtistSelect }) => 
                 <img src={artistImage} alt={artist.name} className="w-52 h-52 rounded-full shadow-2xl object-cover" />
                 <div>
                   <h1 className="text-5xl font-bold mb-4 text-white drop-shadow-lg">{artist.name}</h1>
-                  <p className="text-sm text-white/80">{followerCount} followers</p>
+                  <div className="flex items-center gap-4">
+                    <p className="text-sm text-white/80">{followerCount} followers</p>
+                    <button 
+                      onClick={handleFollowClick}
+                      disabled={followArtistMutation.isPending || unfollowArtistMutation.isPending}
+                      className={`btn btn-sm ${
+                        isFollowingArtist() ? 'btn-secondary' : 'btn-primary'
+                      }`}
+                    >
+                      {followArtistMutation.isPending || unfollowArtistMutation.isPending ? (
+                        <span className="loading loading-spinner loading-sm"></span>
+                      ) : (
+                        isFollowingArtist() ? 'Following' : 'Follow'
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -141,8 +269,9 @@ const ArtistView: React.FC<ArtistViewProps> = ({ artistId, onArtistSelect }) => 
           <div className="space-y-2">
             {topTracks.map((track: Track, index: number) => (
               <div
+                id={`track-${track.track_number}`}
                 key={track.id}
-                className="flex items-center p-2 hover:bg-base-200 rounded-lg cursor-pointer"
+                className="flex items-center p-2 hover:bg-base-300 rounded cursor-pointer transition-colors"
                 onClick={() => handleTrackClick(track, index)}
               >
                 <div className="flex-1">
@@ -170,12 +299,17 @@ const ArtistView: React.FC<ArtistViewProps> = ({ artistId, onArtistSelect }) => 
         </div>
 
         {/* Albums Section */}
-        <div>
+        <div id="albums-section">
           <h2 className="text-2xl font-bold mb-4">Albums</h2>
           <div className="space-y-4">
             {albums.length > 0 ? (
               albums.map((album: Album) => (
-                <div key={album.id} className="bg-base-200 rounded-lg overflow-hidden shadow-lg">
+                <div 
+                  key={album.id} 
+                  className={`bg-base-200 rounded-lg overflow-hidden shadow-lg ${
+                    expandedAlbumId === album.id ? 'ring-2 ring-primary' : ''
+                  }`}
+                >
                   <div 
                     className="cursor-pointer hover:bg-base-300 transition-colors"
                     onClick={() => handleAlbumClick(album.id)}

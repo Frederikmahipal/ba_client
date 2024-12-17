@@ -1,18 +1,22 @@
 // src/components/Header.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import SearchBar from './SearchBar';
 import ProfileView from './ProfileView';
 
 interface HeaderProps {
   onArtistSelect: (artistId: string) => void;
+  onAlbumSelect: (albumId: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onArtistSelect }) => {
+const Header: React.FC<HeaderProps> = ({ 
+  onArtistSelect, 
+  onAlbumSelect 
+}) => {
   const { logout, user } = useAuth();
 
-  const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
-  const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const toggleDropdown = () => {
     setIsDropdownOpen((prev) => !prev);
@@ -25,15 +29,20 @@ const Header: React.FC<HeaderProps> = ({ onArtistSelect }) => {
 
   return (
     <>
-      <div className="navbar bg-secondary shadow-lg rounded-lg my-2 flex flex-col sm:flex-row items-center justify-between">
-        <div className="flex-none mb-2 sm:mb-0">
+      <div className="navbar bg-secondary shadow-lg rounded-lg my-2">
+        <div className="flex-none">
           <a href="/" className="text-xl font-bold">
             MyLogo
           </a>
         </div>
         
-        <div className="flex-1 w-full max-w-lg mx-4">
-          <SearchBar onArtistSelect={onArtistSelect} />
+        <div className="flex-1 flex justify-center h-16">
+          <div className="w-full max-w-xl px-4">
+            <SearchBar 
+              onArtistSelect={onArtistSelect}
+              onAlbumSelect={onAlbumSelect}
+            />
+          </div>
         </div>
         
         <div className="flex-none dropdown dropdown-end">

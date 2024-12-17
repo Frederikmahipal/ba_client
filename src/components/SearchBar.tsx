@@ -6,15 +6,29 @@ interface SpotifyItem {
   id: string;
   name: string;
   type: 'artist' | 'album' | 'track';
-  artists?: Array<{ name: string }>;
+  artists?: Array<{ id: string; name: string }>;
+  images?: Array<{ url: string }>;
+  album?: {
+    id: string;
+    name: string;
+    images: Array<{ url: string }>;
+  };
+  track_number?: number;
 }
 
 interface SearchBarProps {
   onArtistSelect: (artistId: string) => void;
+  onAlbumSelect: (albumId: string) => void;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ onArtistSelect }) => {
+type FilterType = 'all' | 'artist' | 'album' | 'track';
+
+const SearchBar: React.FC<SearchBarProps> = ({ 
+  onArtistSelect, 
+  onAlbumSelect 
+}) => {
   const [query, setQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const { data, isLoading, isError } = useSpotifySearch(query);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,9 +38,17 @@ const SearchBar: React.FC<SearchBarProps> = ({ onArtistSelect }) => {
   const handleItemClick = (item: SpotifyItem) => {
     if (item.type === 'artist') {
       onArtistSelect(item.id);
+    } else if (item.type === 'album') {
+      onAlbumSelect(item.id);
+    } else if (item.type === 'track' && item.album?.id) {
+      onAlbumSelect(item.album.id);
     }
-    // Clear the search query after selection
     setQuery('');
+  };
+
+  const filterItems = (items: SpotifyItem[]) => {
+    if (activeFilter === 'all') return items;
+    return items.filter(item => item.type === activeFilter);
   };
 
   const renderResults = () => {
@@ -38,18 +60,47 @@ const SearchBar: React.FC<SearchBarProps> = ({ onArtistSelect }) => {
       ...(data.tracks?.items || [])
     ];
 
+    const filteredItems = filterItems(allItems);
+
     return (
-      <ul className="menu p-2 bg-base-100 rounded-box shadow-lg">
-        {allItems.map((item) => (
-          <li key={item.id}>
-            <a onClick={() => handleItemClick(item)} className="text-sm">
-              {item.name}
-              {item.type === 'track' && item.artists && ` - ${item.artists[0].name}`}
-              <span className="text-xs ml-2 opacity-60">({item.type})</span>
-            </a>
-          </li>
+      <div className="menu p-2 bg-base-200 rounded-box shadow-lg max-h-[60vh] overflow-y-auto">
+        {filteredItems.map((item) => (
+          <div
+            key={item.id}
+            onClick={() => handleItemClick(item)}
+            className="flex items-center p-2 hover:bg-base-300 rounded-lg cursor-pointer transition-colors"
+          >
+            <div className="w-10 h-10 mr-3">
+              {(item.type === 'track' ? item.album?.images?.[0]?.url : item.images?.[0]?.url) ? (
+                <img
+                  src={item.type === 'track' ? item.album?.images[0].url : item.images![0].url}
+                  alt={item.name}
+                  className="w-full h-full object-cover rounded"
+                />
+              ) : (
+                <div className="w-full h-full bg-base-300 rounded flex items-center justify-center">
+                  <i className="fas fa-music text-base-content/50"></i>
+                </div>
+              )}
+            </div>
+            <div className="flex-grow">
+              <div className="font-medium">{item.name}</div>
+              <div className="text-xs opacity-60">
+                {item.type === 'track' && item.artists && (
+                  <>
+                    {item.artists[0].name}
+                    <span className="mx-1">•</span>
+                    {item.album?.name}
+                  </>
+                )}
+                {item.type !== 'track' && (
+                  <span className="capitalize">{item.type}</span>
+                )}
+              </div>
+            </div>
+          </div>
         ))}
-      </ul>
+      </div>
     );
   };
 
@@ -60,14 +111,45 @@ const SearchBar: React.FC<SearchBarProps> = ({ onArtistSelect }) => {
         value={query}
         onChange={handleInputChange}
         placeholder="Search Spotify..."
-        className="input input-bordered w-full bg-primary"
+        className="input input-bordered w-full bg-base-200"
       />
       
-      {isLoading && <p className="mt-2">Loading...</p>}
-      {isError && <p className="mt-2 text-error">Error occurred while searching</p>}
-      {data && query && (
-        <div className="absolute z-10 w-full mt-1">
-          {renderResults()}
+      {/* Only show dropdown content when there's a query */}
+      {query && (
+        <div className="absolute z-[100] w-full mt-1">
+          {/* Filters */}
+          <div className="bg-base-200 rounded-t-box p-2 border-b border-base-300">
+            <div className="flex gap-2 justify-center">
+              {(['all', 'artist', 'album', 'track'] as FilterType[]).map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setActiveFilter(filter)}
+                  className={`btn btn-xs ${
+                    activeFilter === filter ? 'btn-primary' : 'btn-ghost'
+                  }`}
+                >
+                  {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Loading State */}
+          {isLoading && (
+            <div className="bg-base-200 p-4 rounded-b-box shadow-lg text-center">
+              <span className="loading loading-spinner loading-md"></span>
+            </div>
+          )}
+          
+          {/* Error State */}
+          {isError && (
+            <div className="bg-base-200 p-4 rounded-b-box shadow-lg text-error text-center">
+              Error occurred while searching
+            </div>
+          )}
+          
+          {/* Results */}
+          {data && renderResults()}
         </div>
       )}
     </div>

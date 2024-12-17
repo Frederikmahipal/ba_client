@@ -1,18 +1,38 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePlayback } from '../utils/playback';
 import api from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import { Track, PlayedTrack } from '../models/track';
 import TrackItem from './TrackItem';
 
+type SpotifyContextType = 'album' | 'artist' | 'playlist' | 'queue';
+
+interface SpotifyContext {
+  type: SpotifyContextType;
+  id: string;
+  uri: string;
+  name?: string;
+}
+
+interface CurrentlyPlayingData {
+  item: Track;
+  is_playing: boolean;
+  context?: SpotifyContext;
+}
+
+interface QueueData {
+  currently_playing: Track | null;
+  queue: Track[];
+}
 
 const RecentlyPlayed: React.FC<{ onArtistSelect?: (artistId: string) => void }> = ({ onArtistSelect }) => {
   const { user } = useAuth();
   const { handlePlayTrack } = usePlayback();
+  const queryClient = useQueryClient();
 
   // Fetch currently playing and its context
-  const { data: currentlyPlaying, isLoading: isLoadingCurrent } = useQuery({
+  const { data: currentlyPlaying, isLoading: isLoadingCurrent } = useQuery<CurrentlyPlayingData | null>({
     queryKey: ['currentlyPlaying'],
     queryFn: async () => {
       const response = await api.get('/api/spotify/currently-playing', {
@@ -20,14 +40,33 @@ const RecentlyPlayed: React.FC<{ onArtistSelect?: (artistId: string) => void }> 
           Authorization: `Bearer ${user?.accessToken}`
         }
       });
+      if (response.status === 204 || !response.data) {
+        return null;
+      }
       return response.data;
     },
     enabled: !!user?.accessToken,
-    refetchInterval: 5000
+    refetchInterval: 5000,
+    select: (newData) => {
+      const prevData = queryClient.getQueryData<CurrentlyPlayingData>(['currentlyPlaying']);
+      if (prevData?.item?.id !== newData?.item?.id && prevData?.item) {
+        api.post('/api/spotify/recently-played/add', {
+          track: prevData.item,
+          context: prevData.context
+        }, {
+          headers: {
+            Authorization: `Bearer ${user?.accessToken}`
+          }
+        }).then(() => {
+          queryClient.invalidateQueries({ queryKey: ['recentlyPlayed'] });
+        });
+      }
+      return newData;
+    }
   });
 
-  // Fetch context-based queue
-  const { data: queueData, isLoading: isLoadingQueue, refetch: refetchQueue } = useQuery({
+  // Fetch queue data
+  const { data: queueData, isLoading: isLoadingQueue, refetch: refetchQueue } = useQuery<QueueData>({
     queryKey: ['queue', currentlyPlaying?.context?.uri],
     queryFn: async () => {
       const response = await api.get('/api/spotify/player/queue', {
@@ -35,14 +74,17 @@ const RecentlyPlayed: React.FC<{ onArtistSelect?: (artistId: string) => void }> 
           Authorization: `Bearer ${user?.accessToken}`
         }
       });
-      return response.data;
+      return {
+        currently_playing: response.data?.currently_playing || null,
+        queue: response.data?.queue || []
+      };
     },
     enabled: !!user?.accessToken && !!currentlyPlaying,
     refetchInterval: 10000
   });
 
   // Fetch recently played history
-  const { data: recentTracks, isLoading: isLoadingHistory } = useQuery({
+  const { data: recentTracks, isLoading: isLoadingHistory } = useQuery<PlayedTrack[]>({
     queryKey: ['recentlyPlayed'],
     queryFn: async () => {
       const response = await api.get('/api/spotify/recently-played', {
@@ -53,20 +95,19 @@ const RecentlyPlayed: React.FC<{ onArtistSelect?: (artistId: string) => void }> 
       return response.data.items;
     },
     enabled: !!user?.accessToken,
-    refetchInterval: 30000
+    staleTime: 0,
   });
 
   const handleQueueTrackClick = (track: Track, index: number) => {
     if (!currentlyPlaying?.context) return;
     
     handlePlayTrack(track.uri, track, {
-      type: currentlyPlaying.context.type,
+      type: currentlyPlaying.context.type as SpotifyContextType,
       id: currentlyPlaying.context.id,
       uri: currentlyPlaying.context.uri,
       position: index,
       offset: { uri: track.uri }
     }).then(async () => {
-      // Add a small delay before refetching to ensure Spotify's API has updated
       await new Promise(resolve => setTimeout(resolve, 500));
       await refetchQueue();
     });
@@ -90,7 +131,7 @@ const RecentlyPlayed: React.FC<{ onArtistSelect?: (artistId: string) => void }> 
       )}
 
       {/* Queue Section */}
-      {queueData?.queue?.length > 0 && (
+      {queueData && queueData.queue.length > 0 && (
         <div className="bg-base-200 rounded-lg p-4">
           <h3 className="text-lg font-semibold mb-2">
             Coming Up Next
@@ -135,16 +176,21 @@ const RecentlyPlayed: React.FC<{ onArtistSelect?: (artistId: string) => void }> 
               key={`${item.track.id}-${item.played_at}`}
               track={item.track}
               timestamp={item.played_at}
-              onClick={() => handlePlayTrack(
-                item.track.uri,
-                item.track,
-                item.context && {
-                  type: item.context.type,
-                  id: item.context.id,
-                  uri: item.context.uri,
-                  position: 0
-                }
-              )}
+              onClick={() => {
+                handlePlayTrack(
+                  item.track.uri,
+                  item.track,
+                  item.context && {
+                    type: item.context.type as SpotifyContextType,
+                    id: item.context.id,
+                    uri: item.context.uri,
+                    position: 0
+                  }
+                ).then(() => {
+                  queryClient.invalidateQueries({ queryKey: ['currentlyPlaying'] });
+                  queryClient.invalidateQueries({ queryKey: ['recentlyPlayed'] });
+                });
+              }}
               onArtistSelect={onArtistSelect}
             />
           ))}

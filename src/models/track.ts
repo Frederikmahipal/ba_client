@@ -15,6 +15,7 @@ export interface Track {
   uri: string;
   name: string;
   duration_ms: number;
+  track_number: number;
   artists: Array<{
     id: string;
     name: string;
@@ -42,9 +43,11 @@ export interface PlayedTrack {
 export interface PlaybackContext {
   type: 'album' | 'playlist' | 'artist' | 'queue';
   id: string;
-  uri: string;
+  uri?: string | null;
   position?: number;
   offset?: {
     uri: string;
   };
+  name?: string;
+  uris?: string[];
 }
