@@ -71,7 +71,13 @@ const Dashboard: React.FC = () => {
       );
     }
     if (isArtistViewOpen && selectedArtistId) {
-      return <ArtistView artistId={selectedArtistId} onArtistSelect={handleArtistSelect} />;
+      return (
+        <ArtistView 
+          artistId={selectedArtistId} 
+          onArtistSelect={handleArtistSelect}
+          onClose={handleCloseArtistView}
+        />
+      );
     }
     return <Feed onArtistSelect={handleArtistSelect} onAlbumSelect={handleAlbumSelect} />;
   };
@@ -102,70 +108,77 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen overflow-hidden px-4">
-      <Header 
-        onArtistSelect={handleArtistSelect}
-        onAlbumSelect={handleAlbumSelect}
-      />
+    <div className="h-screen flex flex-col overflow-hidden px-4">
+      {/* Header - fixed height */}
+      <div className="flex-none py-4">
+        <Header 
+          onArtistSelect={handleArtistSelect}
+          onAlbumSelect={handleAlbumSelect}
+        />
+      </div>
 
-      <div className="flex-grow flex flex-col lg:flex-row justify-around items-center overflow-hidden pb-24">
+      {/* Main content area - takes remaining height */}
+      <div className="flex-1 flex flex-col lg:flex-row gap-5 min-h-0">
         {/* Left Column - Playlists */}
-        <div className="hidden lg:block w-full lg:w-1/4">
-          <div className="bg-secondary h-[calc(100vh-220px)] rounded-lg shadow-lg overflow-auto">
+        <div className="hidden lg:block lg:w-1/4">
+          <div className="bg-secondary h-full rounded-lg shadow-lg overflow-y-auto">
             <Playlists onArtistSelect={handleArtistSelect} />
           </div>
         </div>
 
         {/* Middle Column - Artist View */}
-        <div className="hidden lg:block w-full lg:w-2/4 p-5">
-          <div className="bg-secondary h-[calc(100vh-220px)] rounded-lg shadow-lg overflow-auto">
+        <div className="hidden lg:block lg:w-2/4">
+          <div className="bg-secondary h-full rounded-lg shadow-lg overflow-y-auto">
             {renderMiddleBox()}
           </div>
         </div>
 
         {/* Right Column */}
-        <div className="hidden lg:block w-full lg:w-1/4">
-      <div className="bg-secondary h-[calc(100vh-220px)] rounded-lg shadow-lg overflow-auto">
-        <RecentlyPlayed onArtistSelect={handleArtistSelect} />
-      </div>
-    </div>
+        <div className="hidden lg:block lg:w-1/4">
+          <div className="bg-secondary h-full rounded-lg shadow-lg overflow-y-auto">
+            <RecentlyPlayed onArtistSelect={handleArtistSelect} />
+          </div>
+        </div>
 
         {/* Mobile View */}
-        <div className="block lg:hidden w-full h-[calc(100vh-230px)] bg-secondary rounded-lg shadow-lg overflow-auto">
+        <div className="block lg:hidden flex-1 bg-secondary rounded-lg shadow-lg overflow-y-auto">
           {renderBox()}
         </div>
       </div>
 
-      {/* Desktop Player */}
-      <div className="hidden lg:block">
-        <SpotifyPlayer />
-      </div>
+      {/* Player section - fixed height */}
+      <div className="flex-none h-24">
+        {/* Desktop Player */}
+        <div className="hidden lg:block">
+          <SpotifyPlayer />
+        </div>
 
-      {/* Mobile Player */}
-      <div className="lg:hidden fixed bottom-[56px] left-0 right-0">
-        <SpotifyPlayer />
-      </div>
+        {/* Mobile Player */}
+        <div className="lg:hidden fixed bottom-[56px] left-0 right-0">
+          <SpotifyPlayer />
+        </div>
 
-      {/* Mobile Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-secondary p-2 flex justify-around">
-        <button 
-          className={`btn ${activeBox === 0 ? 'btn-primary' : 'btn-ghost'}`} 
-          onClick={() => setActiveBox(0)}
-        >
-          Playlists
-        </button>
-        <button 
-          className={`btn ${activeBox === 1 ? 'btn-primary' : 'btn-ghost'}`} 
-          onClick={() => setActiveBox(1)}
-        >
-          Artist
-        </button>
-        <button 
-          className={`btn ${activeBox === 2 ? 'btn-primary' : 'btn-ghost'}`} 
-          onClick={() => setActiveBox(2)}
-        >
-          Box 3
-        </button>
+        {/* Mobile Navigation */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-secondary p-2 flex justify-around">
+          <button 
+            className={`btn ${activeBox === 0 ? 'btn-primary' : 'btn-ghost'}`} 
+            onClick={() => setActiveBox(0)}
+          >
+            Playlists
+          </button>
+          <button 
+            className={`btn ${activeBox === 1 ? 'btn-primary' : 'btn-ghost'}`} 
+            onClick={() => setActiveBox(1)}
+          >
+            Artist
+          </button>
+          <button 
+            className={`btn ${activeBox === 2 ? 'btn-primary' : 'btn-ghost'}`} 
+            onClick={() => setActiveBox(2)}
+          >
+            Box 3
+          </button>
+        </div>
       </div>
     </div>
   );

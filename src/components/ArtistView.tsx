@@ -207,7 +207,7 @@ const ArtistView: React.FC<ArtistViewProps> = ({
       {onClose && (
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 btn btn-sm btn-circle btn-ghost"
+          className="absolute top-4 right-4 btn btn-sm btn-circle btn-ghost z-50"
         >
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
@@ -227,7 +227,7 @@ const ArtistView: React.FC<ArtistViewProps> = ({
       )}
 
       {/* Hero Section */}
-      <div className="relative h-[350px] mb-6">
+      <div className="relative h-[350px] mb-6 z-0">
         {artistImage && (
           <>
             <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${artistImage})` }}>
