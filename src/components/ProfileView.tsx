@@ -1,5 +1,7 @@
 import React from 'react';
 import { useAuth } from '../hooks/useAuth';
+import api from '../services/api';
+import { useQuery } from '@tanstack/react-query';
 
 interface User {
   name: string;
@@ -15,30 +17,15 @@ interface ProfileViewProps {
 
 const ProfileView: React.FC<ProfileViewProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
-  const [userData, setUserData] = React.useState<User | null>(null);
-  const [loading, setLoading] = React.useState(true);
 
-  React.useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const response = await fetch('/api/users/profile', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        const data = await response.json();
-        setUserData(data);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (isOpen) {
-      fetchUserData();
-    }
-  }, [isOpen]);
+  const { data: userData, isLoading, error } = useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      const response = await api.get('/api/users/profile');
+      return response.data;
+    },
+    enabled: isOpen && !!user?.accessToken
+  });
 
   if (!isOpen) return null;
 
@@ -55,10 +42,12 @@ const ProfileView: React.FC<ProfileViewProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="flex justify-center">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
+        ) : error ? (
+          <p className="text-center text-error">Failed to load user data</p>
         ) : userData ? (
           <div className="space-y-4">
             <div className="flex items-center justify-center mb-6">

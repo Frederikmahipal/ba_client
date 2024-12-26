@@ -14,19 +14,20 @@ export interface Track {
   id: string;
   uri: string;
   name: string;
-  duration_ms: number;
-  track_number: number;
+  track_number?: number;
   artists: Array<{
     id: string;
     name: string;
   }>;
-  album: {
+  album?: {
     id: string;
     name: string;
     images: Array<{
       url: string;
     }>;
   };
+  album_id?: string;
+  duration_ms: number;
 }
 
 export interface PlayedTrack {

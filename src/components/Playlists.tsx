@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { usePlayback } from '../utils/playback';
+import TrackItem from './TrackItem';
 
 interface Track {
   id: string;
@@ -180,41 +181,14 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
 
             <div className="space-y-2">
               {playlistDetails.tracks.items.map((item, index) => (
-                <div 
+                <TrackItem
                   key={`${item.track.id}-${index}`}
-                  className="flex items-center p-2 hover:bg-base-200 rounded-lg cursor-pointer"
+                  track={item.track}
+                  index={index + 1}
                   onClick={() => handleTrackClick(item, index)}
-                >
-                  {item.track.album.images?.[0] && (
-                    <img 
-                      src={item.track.album.images[0].url}
-                      alt={item.track.name}
-                      className="w-10 h-10 object-cover rounded mr-3"
-                    />
-                  )}
-                  <div>
-                    <div className="font-medium">{item.track.name}</div>
-                    <div className="text-sm opacity-75">
-                      {item.track.artists.map((artist, i) => (
-                        <React.Fragment key={artist.id}>
-                          {i > 0 && ', '}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onArtistSelect?.(artist.id);
-                            }}
-                            className="hover:text-primary hover:underline"
-                          >
-                            {artist.name}
-                          </button>
-                        </React.Fragment>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="ml-auto text-sm opacity-75">
-                    {formatDuration(item.track.duration_ms)}
-                  </div>
-                </div>
+                  onArtistSelect={onArtistSelect}
+                  albumImages={item.track.album.images}
+                />
               ))}
             </div>
           </>

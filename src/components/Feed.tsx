@@ -108,26 +108,7 @@ const Feed: React.FC<FeedProps> = ({ onArtistSelect }) => {
         </div>
       )}
 
-      <div>
-        <h2 className="text-xl mb-4">People You Follow</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {followedUsers.map(user => (
-            <div 
-              key={user.spotifyId} 
-              className="bg-base-200 p-4 rounded-lg hover:bg-base-300 cursor-pointer"
-              onClick={() => user.spotifyId && onArtistSelect(user.spotifyId)}
-            >
-              <img 
-                src={user.profilePicture} 
-                alt={user.name} 
-                className="w-16 h-16 rounded-full"
-              />
-              <h3 className="font-medium mt-2">{user.name}</h3>
-            </div>
-          ))}
-        </div>
       </div>
-    </div>
   );
 };
 

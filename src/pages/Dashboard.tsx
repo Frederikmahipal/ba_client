@@ -6,6 +6,7 @@ import SpotifyPlayer from '../components/webPlayer/SpotifyPlayer';
 import RecentlyPlayed from '../components/RecentlyPlayed';
 import Feed from '../components/Feed';
 import AlbumView from '../components/AlbumView';
+import { Outlet } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
   const [activeBox, setActiveBox] = useState(0);
@@ -146,7 +147,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Player section - fixed height */}
+      {/* Player section */}
       <div className="flex-none h-24">
         {/* Desktop Player */}
         <div className="hidden lg:block">

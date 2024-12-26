@@ -149,6 +149,7 @@ const RecentlyPlayed: React.FC<{ onArtistSelect?: (artistId: string) => void }> 
                 index={index + 1}
                 onClick={() => handleQueueTrackClick(track, index)}
                 onArtistSelect={onArtistSelect}
+                showOptions={false}
               />
             ))}
           </div>
@@ -163,6 +164,7 @@ const RecentlyPlayed: React.FC<{ onArtistSelect?: (artistId: string) => void }> 
             track={currentlyPlaying.item}
             isPlaying={currentlyPlaying.is_playing}
             onArtistSelect={onArtistSelect}
+            showOptions={false}
           />
         </div>
       )}
@@ -192,6 +194,7 @@ const RecentlyPlayed: React.FC<{ onArtistSelect?: (artistId: string) => void }> 
                 });
               }}
               onArtistSelect={onArtistSelect}
+              showOptions={false}
             />
           ))}
         </div>

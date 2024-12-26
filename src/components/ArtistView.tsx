@@ -4,6 +4,7 @@ import { usePlayback } from '../utils/playback';
 import api from '../services/api';
 import { Track } from '../models/track';
 import { User } from '../models/user';
+import TrackItem from './TrackItem';
 
 interface ArtistViewProps {
   artistId: string;
@@ -203,7 +204,7 @@ const ArtistView: React.FC<ArtistViewProps> = ({
   const followerCount = new Intl.NumberFormat().format(artist.followers?.total || 0);
 
   return (
-    <div className="relative">
+    <div className="relative h-full overflow-x-hidden">
       {onClose && (
         <button 
           onClick={onClose}
@@ -266,34 +267,15 @@ const ArtistView: React.FC<ArtistViewProps> = ({
         {/* Popular Tracks Section */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-4">Popular Tracks</h2>
-          <div className="space-y-2">
+          <div className="space-y-2 overflow-x-hidden">
             {topTracks.map((track: Track, index: number) => (
-              <div
-                id={`track-${track.track_number}`}
+              <TrackItem
                 key={track.id}
-                className="flex items-center p-2 hover:bg-base-300 rounded cursor-pointer transition-colors"
+                track={track}
+                index={index + 1}
                 onClick={() => handleTrackClick(track, index)}
-              >
-                <div className="flex-1">
-                  <div className="font-medium">{track.name}</div>
-                  <div className="text-sm opacity-75">
-                    {track.artists.map((artist, i) => (
-                      <React.Fragment key={artist.id}>
-                        {i > 0 && ', '}
-                        <button
-                          onClick={(e) => handleArtistClick(e, artist.id)}
-                          className="hover:text-primary hover:underline"
-                        >
-                          {artist.name}
-                        </button>
-                      </React.Fragment>
-                    ))}
-                  </div>
-                </div>
-                <div className="text-sm opacity-50">
-                  {formatDuration(track.duration_ms)}
-                </div>
-              </div>
+                onArtistSelect={onArtistSelect}
+              />
             ))}
           </div>
         </div>
@@ -353,34 +335,14 @@ const ArtistView: React.FC<ArtistViewProps> = ({
                       ) : albumDetails ? (
                         <div className="p-4 space-y-2">
                           {albumDetails.tracks.items.map((track, index) => (
-                            <div
+                            <TrackItem
                               key={track.id}
-                              className="flex items-center p-2 hover:bg-base-300 rounded cursor-pointer"
+                              track={track}
+                              index={track.track_number}
                               onClick={() => handleTrackClick(track, index)}
-                            >
-                              <span className="w-8 text-sm opacity-50">
-                                {track.track_number}
-                              </span>
-                              <div className="flex-1">
-                                <div className="font-medium">{track.name}</div>
-                                <div className="text-sm opacity-75">
-                                  {track.artists.map((artist, i) => (
-                                    <React.Fragment key={artist.id}>
-                                      {i > 0 && ', '}
-                                      <button
-                                        onClick={(e) => handleArtistClick(e, artist.id)}
-                                        className="hover:text-primary hover:underline"
-                                      >
-                                        {artist.name}
-                                      </button>
-                                    </React.Fragment>
-                                  ))}
-                                </div>
-                              </div>
-                              <div className="text-sm opacity-50">
-                                {formatDuration(track.duration_ms)}
-                              </div>
-                            </div>
+                              onArtistSelect={onArtistSelect}
+                              albumImages={albumDetails.images}
+                            />
                           ))}
                         </div>
                       ) : (

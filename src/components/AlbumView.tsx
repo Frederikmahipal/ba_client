@@ -1,5 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import TrackItem from './TrackItem';
 import { usePlayback } from '../utils/playback';
 import api from '../services/api';
 import { Track } from '../models/track';
@@ -115,37 +116,13 @@ const AlbumView: React.FC<AlbumViewProps> = ({ albumId, onArtistSelect, onClose 
       <div className="p-6">
         <div className="space-y-2">
           {album.tracks.items.map((track, index) => (
-            <div
+            <TrackItem
               key={track.id}
-              className="flex items-center p-2 hover:bg-base-300 rounded cursor-pointer transition-colors"
+              track={track}
+              index={track.track_number}
               onClick={() => handleTrackClick(track, index)}
-            >
-              <span className="w-8 text-sm opacity-50">
-                {track.track_number}
-              </span>
-              <div className="flex-1">
-                <div className="font-medium">{track.name}</div>
-                <div className="text-sm opacity-75">
-                  {track.artists.map((artist, i) => (
-                    <React.Fragment key={artist.id}>
-                      {i > 0 && ', '}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onArtistSelect(artist.id);
-                        }}
-                        className="hover:text-primary hover:underline"
-                      >
-                        {artist.name}
-                      </button>
-                    </React.Fragment>
-                  ))}
-                </div>
-              </div>
-              <div className="text-sm opacity-50">
-                {formatDuration(track.duration_ms)}
-              </div>
-            </div>
+              onArtistSelect={onArtistSelect}
+            />
           ))}
         </div>
       </div>
