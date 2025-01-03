@@ -97,7 +97,9 @@ const Feed: React.FC<FeedProps> = ({ onArtistSelect, onAlbumSelect }) => {
                       <div 
                         key={release.id}
                         className="cursor-pointer group"
-                        onClick={() => onAlbumSelect(release.id)}
+                        onClick={() => {
+                          onAlbumSelect(release.id);
+                        }}
                       >
                         <img 
                           src={release.images[0]?.url} 

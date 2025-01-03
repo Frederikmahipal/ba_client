@@ -137,11 +137,8 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
       uri: track.uri,
       name: track.name,
       artists: track.artists,
-      album: {
-        id: track.album.id,
-        name: track.album.name,
-        images: track.album.images
-      }
+      album: track.album,
+      duration_ms: track.duration_ms
     };
 
     handlePlayTrack(track.uri, completeTrack, {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Header from '../components/Header';
 import ArtistView from '../components/ArtistView';
 import Playlists from '../components/Playlists';
@@ -14,24 +14,6 @@ const Dashboard: React.FC = () => {
   const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
   const [isArtistViewOpen, setArtistViewOpen] = useState(false);
   const [isAlbumViewOpen, setAlbumViewOpen] = useState(false);
-
-  useEffect(() => {
-    const handleRouteChange = () => {
-      const artistMatch = window.location.pathname.match(/\/artist\/([^/]+)/);
-      if (artistMatch) {
-        const artistId = artistMatch[1];
-        setSelectedArtistId(artistId);
-        setArtistViewOpen(true);
-        setAlbumViewOpen(false);
-        setActiveBox(1);
-      }
-    };
-
-    handleRouteChange();
-
-    window.addEventListener('popstate', handleRouteChange);
-    return () => window.removeEventListener('popstate', handleRouteChange);
-  }, []);
 
   const handleArtistSelect = (artistId: string) => {
     setSelectedArtistId(artistId);
@@ -51,14 +33,12 @@ const Dashboard: React.FC = () => {
     setSelectedArtistId(null);
     setSelectedAlbumId(null);
     setActiveBox(0);
-    window.history.pushState(null, '', '/');
   };
 
   const handleCloseAlbumView = () => {
     setAlbumViewOpen(false);
     setSelectedAlbumId(null);
     setActiveBox(0);
-    window.history.pushState(null, '', '/');
   };
 
   const renderMiddleBox = () => {
@@ -90,14 +70,23 @@ const Dashboard: React.FC = () => {
       case 1:
         return (
           <div className="p-4">
-            {selectedArtistId ? (
+            {selectedAlbumId ? (
+              <AlbumView 
+                albumId={selectedAlbumId}
+                onArtistSelect={handleArtistSelect}
+                onClose={handleCloseAlbumView}
+              />
+            ) : selectedArtistId ? (
               <ArtistView 
                 artistId={selectedArtistId}
                 onArtistSelect={handleArtistSelect}
                 onClose={handleCloseArtistView}
               />
             ) : (
-              <Feed onArtistSelect={handleArtistSelect} onAlbumSelect={handleAlbumSelect} />
+              <Feed 
+                onArtistSelect={handleArtistSelect} 
+                onAlbumSelect={handleAlbumSelect} 
+              />
             )}
           </div>
         );
