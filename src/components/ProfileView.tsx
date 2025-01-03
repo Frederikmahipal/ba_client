@@ -3,13 +3,6 @@ import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
 import { useQuery } from '@tanstack/react-query';
 
-interface User {
-  name: string;
-  email: string;
-  spotifyId?: string;
-  createdAt?: string;
-}
-
 interface ProfileViewProps {
   isOpen: boolean;
   onClose: () => void;

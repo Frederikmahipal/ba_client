@@ -36,6 +36,7 @@ interface PlaylistDetails {
   tracks: {
     items: Array<{ track: Track }>;
     total: number;
+    next: string | null;
   };
   owner: {
     display_name: string;
@@ -96,7 +97,33 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
         throw new Error('Failed to fetch playlist details');
       }
       
-      return response.json() as Promise<PlaylistDetails>;
+      const initialData = await response.json() as PlaylistDetails;
+      let allTracks = [...initialData.tracks.items];
+      let nextUrl = initialData.tracks.next;
+
+      while (nextUrl) {
+        const moreTracksResponse = await fetch(nextUrl, {
+          headers: {
+            'Authorization': `Bearer ${user.accessToken}`
+          }
+        });
+
+        if (!moreTracksResponse.ok) {
+          throw new Error('Failed to fetch additional tracks');
+        }
+
+        const moreTracksData = await moreTracksResponse.json();
+        allTracks = [...allTracks, ...moreTracksData.items];
+        nextUrl = moreTracksData.next;
+      }
+
+      return {
+        ...initialData,
+        tracks: {
+          ...initialData.tracks,
+          items: allTracks
+        }
+      };
     },
     enabled: !!selectedPlaylist?.id && !!user?.accessToken,
   });

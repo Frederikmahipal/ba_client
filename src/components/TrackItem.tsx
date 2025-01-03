@@ -5,6 +5,7 @@ import api from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import { useDropdownStore } from '../store/dropdownStore';
 import { usePlayback } from '../utils/playback';
+import TrackDropdown from './TrackDropdown';
 
 interface Playlist {
   id: string;
@@ -37,7 +38,6 @@ const TrackItem: React.FC<TrackItemProps> = ({
 }) => {
   const { user } = useAuth();
   const { handlePlayTrack } = usePlayback();
-  const [showPlaylists, setShowPlaylists] = useState(false);
   const { activeDropdownId, setActiveDropdownId } = useDropdownStore();
   const queryClient = useQueryClient();
 
@@ -54,7 +54,7 @@ const TrackItem: React.FC<TrackItemProps> = ({
       });
       return response.data.items;
     },
-    enabled: showPlaylists && !!user?.accessToken
+    enabled: isDropdownOpen && !!user?.accessToken
   });
 
   const handleAddToPlaylist = async (playlistId: string) => {
@@ -67,17 +67,8 @@ const TrackItem: React.FC<TrackItemProps> = ({
         }
       });
       setActiveDropdownId(null);
-      setShowPlaylists(false);
     } catch (error) {
       console.error('Failed to add track to playlist:', error);
-    }
-  };
-
-  // Close dropdown when clicking anywhere else
-  const handleGlobalClick = (e: React.MouseEvent) => {
-    if (isDropdownOpen) {
-      setActiveDropdownId(null);
-      setShowPlaylists(false);
     }
   };
 
@@ -136,7 +127,6 @@ const TrackItem: React.FC<TrackItemProps> = ({
       className={`group flex items-center space-x-4 p-2 hover:bg-base-300 rounded-lg cursor-pointer transition-colors
         ${isPlaying ? 'bg-primary bg-opacity-10' : ''}`}
       onClick={(e) => {
-        handleGlobalClick(e);
         handlePlay(e);
       }}
     >
@@ -212,11 +202,7 @@ const TrackItem: React.FC<TrackItemProps> = ({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                if (isDropdownOpen) {
-                  setActiveDropdownId(null);
-                } else {
-                  setActiveDropdownId(track.id);
-                }
+                setActiveDropdownId(activeDropdownId === track.id ? null : track.id);
               }}
               className="btn btn-ghost btn-sm btn-circle opacity-0 group-hover:opacity-100"
             >
@@ -225,79 +211,12 @@ const TrackItem: React.FC<TrackItemProps> = ({
               </svg>
             </button>
 
-            {isDropdownOpen && (
-              <div 
-                className="absolute right-0 mt-2 w-48 bg-base-200 rounded-lg shadow-xl z-[100]"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <ul className="py-2">
-                  <li>
-                    <button
-                      className="px-4 py-2 hover:bg-base-300 w-full text-left"
-                      onClick={() => onArtistSelect?.(track.artists[0].id)}
-                    >
-                      Go to Artist
-                    </button>
-                  </li>
-                  {track.album?.id && (
-                    <li>
-                      <button
-                        className="px-4 py-2 hover:bg-base-300 w-full text-left"
-                        onClick={() => onAlbumSelect?.(track.album!.id)}
-                      >
-                        Go to Album
-                      </button>
-                    </li>
-                  )}
-                  <li className="relative">
-                    <button
-                      className="px-4 py-2 hover:bg-base-300 w-full text-left flex items-center justify-between"
-                      onClick={() => setShowPlaylists(!showPlaylists)}
-                      onMouseEnter={() => setShowPlaylists(true)}
-                    >
-                      <span>Add to Playlist</span>
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-
-                    {showPlaylists && (
-                      <div 
-                        className="absolute left-full top-0 w-48 bg-base-200 rounded-lg shadow-xl ml-2 overflow-y-auto"
-                        style={{ maxHeight: '60vh' }}
-                        onMouseLeave={() => setShowPlaylists(false)}
-                      >
-                        {playlists ? (
-                          <ul className="py-2">
-                            {playlists.map(playlist => (
-                              <li key={playlist.id}>
-                                <button
-                                  className="px-4 py-2 hover:bg-base-300 w-full text-left flex items-center gap-2"
-                                  onClick={() => handleAddToPlaylist(playlist.id)}
-                                >
-                                  {playlist.images?.length > 0 && (
-                                    <img 
-                                      src={playlist.images[0].url} 
-                                      alt="" 
-                                      className="w-6 h-6 rounded"
-                                    />
-                                  )}
-                                  <span className="truncate">{playlist.name}</span>
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <div className="p-4 text-center">
-                            <span className="loading loading-spinner loading-sm"></span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </li>
-                </ul>
-              </div>
-            )}
+            <TrackDropdown
+              track={track}
+              isOpen={activeDropdownId === track.id}
+              onClose={() => setActiveDropdownId(null)}
+              onArtistSelect={onArtistSelect}
+            />
           </div>
         )}
       </div>

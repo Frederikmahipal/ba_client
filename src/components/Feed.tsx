@@ -16,12 +16,26 @@ interface FollowedArtist {
   followedAt: string;
 }
 
+interface ArtistUpdate {
+  artistId: string;
+  artistName: string;
+  artistImage: string;
+  updates: {
+    newReleases: Array<{
+      id: string;
+      name: string;
+      release_date: string;
+      images: Array<{ url: string }>;
+    }>;
+  };
+}
+
 interface FeedData {
   followedUsers: User[];
   followedArtists: FollowedArtist[];
 }
 
-const Feed: React.FC<FeedProps> = ({ onArtistSelect }) => {
+const Feed: React.FC<FeedProps> = ({ onArtistSelect, onAlbumSelect }) => {
   const { data: feed, isLoading: feedLoading } = useQuery<FeedData>({
     queryKey: ['feed'],
     queryFn: async () => {
@@ -39,16 +53,70 @@ const Feed: React.FC<FeedProps> = ({ onArtistSelect }) => {
     enabled: Boolean(feed?.followedArtists?.length)
   });
 
+  const { data: artistUpdates } = useQuery<ArtistUpdate[]>({
+    queryKey: ['artistUpdates'],
+    queryFn: async () => {
+      const response = await api.get('/api/spotify/artist-updates');
+      return response.data;
+    },
+    enabled: Boolean(feed?.followedArtists?.length)
+  });
+
   if (feedLoading || recommendationsLoading) {
     return <div>Loading...</div>;
   }
 
   const followedArtists = feed?.followedArtists ?? [];
-  const followedUsers = feed?.followedUsers ?? [];
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold mb-6">Your Feed</h1>
+      
+
+      {artistUpdates && artistUpdates.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl mb-4">New Releases from Your Artists</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {artistUpdates.map((update) => (
+              <div key={update.artistId} className="bg-base-200 rounded-lg p-4">
+                <div 
+                  className="flex items-center gap-4 mb-4 cursor-pointer"
+                  onClick={() => onArtistSelect(update.artistId)}
+                >
+                  <img 
+                    src={update.artistImage} 
+                    alt={update.artistName}
+                    className="w-16 h-16 rounded-full" 
+                  />
+                  <h3 className="text-lg font-medium">{update.artistName}</h3>
+                </div>
+
+                <div className="mb-4">
+                  <h4 className="font-medium mb-2">New Releases</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {update.updates.newReleases.map((release) => (
+                      <div 
+                        key={release.id}
+                        className="cursor-pointer group"
+                        onClick={() => onAlbumSelect(release.id)}
+                      >
+                        <img 
+                          src={release.images[0]?.url} 
+                          alt={release.name}
+                          className="w-full aspect-square object-cover rounded-lg group-hover:opacity-80" 
+                        />
+                        <p className="text-sm mt-1 truncate">{release.name}</p>
+                        <p className="text-xs opacity-70">
+                          {new Date(release.release_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="mb-8">
         <h2 className="text-xl mb-4">Artists You Follow</h2>
