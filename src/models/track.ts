@@ -52,3 +52,13 @@ export interface PlaybackContext {
   name?: string;
   uris?: string[];
 }
+
+export interface TrackInfoProps {
+  currentTrack: {
+    name: string;
+    artists: Array<{ name: string }>;
+    album: {
+      images: Array<{ url: string }>;
+    };
+  } | null;
+}

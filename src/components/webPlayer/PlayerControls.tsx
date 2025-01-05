@@ -8,10 +8,10 @@ interface PlayerControlsProps {
 }
 
 const PlayerControls: React.FC<PlayerControlsProps> = ({ onPlayPause, onNext, onPrevious, isPaused }) => (
-  <div className="flex items-center justify-center gap-4 mb-1">
+  <div className="flex items-center justify-center gap-2 lg:gap-4 mb-1">
     {/* Previous Button */}
     <button 
-      className="text-[#b3b3b3] hover:text-white transition-colors"
+      className="text-[#b3b3b3] hover:text-white transition-colors p-2"
       onClick={onPrevious}
     >
       <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
@@ -21,7 +21,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({ onPlayPause, onNext, on
 
     {/* Play/Pause Button */}
     <button 
-      className="flex items-center justify-center w-8 h-8 rounded-full bg-white hover:scale-105 transition-transform"
+      className="flex items-center justify-center w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-white hover:scale-105 transition-transform"
       onClick={onPlayPause}
     >
       {isPaused ? (
@@ -37,7 +37,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({ onPlayPause, onNext, on
 
     {/* Next Button */}
     <button 
-      className="text-[#b3b3b3] hover:text-white transition-colors"
+      className="text-[#b3b3b3] hover:text-white transition-colors p-2"
       onClick={onNext}
     >
       <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">

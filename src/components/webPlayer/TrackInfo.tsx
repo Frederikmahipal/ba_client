@@ -1,14 +1,6 @@
 import React from 'react';
+import { TrackInfoProps } from '../../models/track';
 
-interface TrackInfoProps {
-  currentTrack: {
-    name: string;
-    artists: Array<{ name: string }>;
-    album: {
-      images: Array<{ url: string }>;
-    };
-  } | null;
-}
 
 const TrackInfo: React.FC<TrackInfoProps> = ({ currentTrack }) => (
   <div className="flex items-center space-x-4">

@@ -108,7 +108,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Main content area - takes remaining height */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-5 min-h-0">
+      <div className="flex-1 flex flex-col lg:flex-row gap-5 min-h-0 mb-24">
         {/* Left Column - Playlists */}
         <div className="hidden lg:block lg:w-1/4">
           <div className="bg-secondary h-full rounded-lg shadow-lg overflow-y-auto">
@@ -131,25 +131,19 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Mobile View */}
-        <div className="block lg:hidden flex-1 bg-secondary rounded-lg shadow-lg overflow-y-auto">
+        <div className="block lg:hidden flex-1 bg-secondary rounded-lg shadow-lg overflow-y-auto mb-[80px]">
           {renderBox()}
         </div>
       </div>
 
       {/* Player section */}
-      <div className="flex-none h-24">
-        {/* Desktop Player */}
-        <div className="hidden lg:block">
-          <SpotifyPlayer />
-        </div>
-
-        {/* Mobile Player */}
-        <div className="lg:hidden fixed bottom-[56px] left-0 right-0">
+      <div className="flex-none">
+        <div className="fixed lg:absolute bottom-[56px] lg:bottom-0 left-0 right-0 bg-secondary border-t border-base-300">
           <SpotifyPlayer />
         </div>
 
         {/* Mobile Navigation */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-secondary p-2 flex justify-around">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-secondary p-2 flex justify-around border-t border-base-300">
           <button 
             className={`btn ${activeBox === 0 ? 'btn-primary' : 'btn-ghost'}`} 
             onClick={() => setActiveBox(0)}
@@ -166,7 +160,7 @@ const Dashboard: React.FC = () => {
             className={`btn ${activeBox === 2 ? 'btn-primary' : 'btn-ghost'}`} 
             onClick={() => setActiveBox(2)}
           >
-            Box 3
+            Queue
           </button>
         </div>
       </div>

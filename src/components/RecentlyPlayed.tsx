@@ -171,7 +171,7 @@ const RecentlyPlayed: React.FC<{ onArtistSelect?: (artistId: string) => void }> 
 
       {/* Recently Played History */}
       <div className="bg-base-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold mb-2">Recently Played</h3>
+        <h3 className="text-lg font-semibold mb-2">On Repeat</h3>
         <div className="space-y-2">
           {recentTracks?.map((item: PlayedTrack) => (
             <TrackItem

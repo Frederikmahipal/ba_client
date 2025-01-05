@@ -42,8 +42,10 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ position, duration, onSeek, i
   };
 
   return (
-    <div className="flex items-center space-x-2 w-full">
-      <span className="text-xs text-white">{formatTime(currentPosition)}</span>
+    <div className="flex items-center space-x-2 w-full px-2 lg:px-4">
+      <span className="text-xs text-white min-w-[40px] text-right">
+        {formatTime(currentPosition)}
+      </span>
       <input
         type="range"
         min={0}
@@ -52,7 +54,9 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ position, duration, onSeek, i
         className="flex-grow h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
         onChange={(e) => handleChange(parseInt(e.target.value))}
       />
-      <span className="text-xs text-white">{formatTime(duration)}</span>
+      <span className="text-xs text-white min-w-[40px]">
+        {formatTime(duration)}
+      </span>
     </div>
   );
 };

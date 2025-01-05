@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { usePlayback } from '../utils/playback';
@@ -51,6 +51,9 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
   const { user } = useAuth();
   const { handlePlayTrack } = usePlayback();
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadedTracks, setLoadedTracks] = useState<Array<{ track: Track }>>([]);
+  const [nextTracksUrl, setNextTracksUrl] = useState<string | null>(null);
 
   const { data: playlists, isLoading, error } = useQuery({
     queryKey: ['playlists'],
@@ -79,7 +82,8 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
       }
     },
     enabled: !!user?.accessToken,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    gcTime: 0
   });
 
   const { data: playlistDetails, isLoading: isLoadingDetails } = useQuery({
@@ -97,36 +101,66 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
         throw new Error('Failed to fetch playlist details');
       }
       
-      const initialData = await response.json() as PlaylistDetails;
-      let allTracks = [...initialData.tracks.items];
-      let nextUrl = initialData.tracks.next;
-
-      while (nextUrl) {
-        const moreTracksResponse = await fetch(nextUrl, {
-          headers: {
-            'Authorization': `Bearer ${user.accessToken}`
-          }
-        });
-
-        if (!moreTracksResponse.ok) {
-          throw new Error('Failed to fetch additional tracks');
-        }
-
-        const moreTracksData = await moreTracksResponse.json();
-        allTracks = [...allTracks, ...moreTracksData.items];
-        nextUrl = moreTracksData.next;
-      }
-
-      return {
-        ...initialData,
-        tracks: {
-          ...initialData.tracks,
-          items: allTracks
-        }
-      };
+      const data = await response.json() as PlaylistDetails;
+      setLoadedTracks(data.tracks.items);
+      setNextTracksUrl(data.tracks.next);
+      return data;
     },
     enabled: !!selectedPlaylist?.id && !!user?.accessToken,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+    gcTime: 0
   });
+
+  const loadMoreTracks = async () => {
+    if (!nextTracksUrl || !user?.accessToken || isLoadingMore) return;
+
+    setIsLoadingMore(true);
+    try {
+      const response = await fetch(nextTracksUrl, {
+        headers: {
+          'Authorization': `Bearer ${user.accessToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch additional tracks');
+      }
+
+      const data = await response.json();
+      setLoadedTracks(prev => [...prev, ...data.items]);
+      setNextTracksUrl(data.next);
+    } catch (error) {
+      console.error('Error loading more tracks:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  // Add intersection observer for infinite scroll
+  const trackListRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && nextTracksUrl) {
+          loadMoreTracks();
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    const currentTrackList = trackListRef.current;
+    if (currentTrackList) {
+      observer.observe(currentTrackList);
+    }
+
+    return () => {
+      if (currentTrackList) {
+        observer.unobserve(currentTrackList);
+      }
+    };
+  }, [nextTracksUrl]);
 
   const handleTrackClick = (trackItem: { track: Track }, index: number) => {
     if (!selectedPlaylist) return;
@@ -148,6 +182,14 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
       position: index
     });
   };
+
+  // Reset tracks when changing playlists
+  useEffect(() => {
+    if (selectedPlaylist?.id) {
+      setLoadedTracks([]);
+      setNextTracksUrl(null);
+    }
+  }, [selectedPlaylist?.id]);
 
   if (isLoading) {
     return (
@@ -204,7 +246,7 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
             </div>
 
             <div className="space-y-2">
-              {playlistDetails.tracks.items.map((item, index) => (
+              {loadedTracks.map((item, index) => (
                 <TrackItem
                   key={`${item.track.id}-${index}`}
                   track={item.track}
@@ -214,6 +256,16 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
                   albumImages={item.track.album.images}
                 />
               ))}
+              
+              {/* Loading indicator at bottom */}
+              {isLoadingMore && (
+                <div className="flex justify-center py-4">
+                  <span className="loading loading-spinner loading-md"></span>
+                </div>
+              )}
+              
+              {/* Intersection observer target */}
+              <div ref={trackListRef} className="h-4" />
             </div>
           </>
         )}
@@ -272,10 +324,5 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
   );
 };
 
-const formatDuration = (ms: number): string => {
-  const minutes = Math.floor(ms / 60000);
-  const seconds = Math.floor((ms % 60000) / 1000);
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-};
 
 export default Playlists;
