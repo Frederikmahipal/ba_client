@@ -4,6 +4,7 @@ import TrackItem from './TrackItem';
 import { usePlayback } from '../utils/playback';
 import api from '../services/api';
 import { Track } from '../models/track';
+import { Album } from '../models/album';
 
 interface AlbumViewProps {
   albumId: string;
@@ -11,16 +12,6 @@ interface AlbumViewProps {
   onClose?: () => void;
 }
 
-interface Album {
-  id: string;
-  name: string;
-  artists: Array<{ id: string; name: string }>;
-  release_date: string;
-  images: Array<{ url: string }>;
-  tracks: {
-    items: Track[];
-  };
-}
 
 const AlbumView: React.FC<AlbumViewProps> = ({ albumId, onArtistSelect, onClose }) => {
   const { handlePlayTrack } = usePlayback();
@@ -49,12 +40,6 @@ const AlbumView: React.FC<AlbumViewProps> = ({ albumId, onArtistSelect, onClose 
       uri: `spotify:album:${albumId}`,
       position: index
     });
-  };
-
-  const formatDuration = (ms: number): string => {
-    const minutes = Math.floor(ms / 60000);
-    const seconds = Math.floor((ms % 60000) / 1000);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
   if (isLoading) return <div>Loading...</div>;

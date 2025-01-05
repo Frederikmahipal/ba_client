@@ -4,8 +4,8 @@ import { useAuth } from '../hooks/useAuth';
 import { usePlayback } from '../utils/playback';
 import TrackItem from './TrackItem';
 import { Track } from '../models/track';
-import { Playlist, PlaylistDetails } from '../models/playlist';
-
+import { Playlist } from '../models/playlist';
+import api from '../services/api';
 interface PlaylistsProps {
   onArtistSelect?: (artistId: string) => void;
 }
@@ -30,18 +30,10 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
       }
 
       try {
-        const response = await fetch('http://localhost:4000/api/spotify/playlists?limit=50', {
-          headers: {
-            'Authorization': `Bearer ${user.accessToken}`
-          }
+        const { data } = await api.get('/api/spotify/playlists', {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+          params: { limit: 50 }
         });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to fetch playlists');
-        }
-
-        const data = await response.json();
         return data.items as Playlist[];
       } catch (err) {
         console.error('Playlist fetch error:', err);
@@ -60,17 +52,10 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
     queryFn: async () => {
       if (!selectedPlaylist?.id || !user?.accessToken) return null;
       
-      const response = await fetch(`http://localhost:4000/api/spotify/playlist/${selectedPlaylist.id}`, {
-        headers: {
-          'Authorization': `Bearer ${user.accessToken}`
-        }
+      const { data } = await api.get(`/api/spotify/playlist/${selectedPlaylist.id}`, {
+        headers: { Authorization: `Bearer ${user.accessToken}` }
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch playlist details');
-      }
-      
-      const data = await response.json() as PlaylistDetails;
       setLoadedTracks(data.tracks.items);
       setNextTracksUrl(data.tracks.next);
       return data;
@@ -165,23 +150,13 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
     
     setIsCreating(true);
     try {
-      const response = await fetch('http://localhost:4000/api/spotify/playlists', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${user.accessToken}`,
-          'Content-Type': 'application/json',
-          'credentials': 'include'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ name: newPlaylistName })
-      });
+      await api.post('/api/spotify/playlists', 
+        { name: newPlaylistName },
+        { 
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        }
+      );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create playlist');
-      }
-
-      // Force refetch playlists
       await queryClient.invalidateQueries({ queryKey: ['playlists'] });
       await queryClient.refetchQueries({ queryKey: ['playlists'] });
       

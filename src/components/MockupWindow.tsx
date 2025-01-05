@@ -2,7 +2,7 @@ import React from 'react';
 
 const MockupWindow: React.FC = () => {
   return (
-    <div className="mockup-window border bg-base-100 w-full max-w-3xl shadow-xl">
+    <div className="hidden lg:block mockup-window border bg-base-100 w-full max-w-3xl shadow-xl">
       <div className="flex flex-col gap-2 p-4 bg-base-200">
         {/* Header Mock */}
         <div className="w-full bg-secondary rounded-lg p-4 flex items-center justify-between">
