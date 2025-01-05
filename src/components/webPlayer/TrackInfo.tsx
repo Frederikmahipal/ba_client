@@ -1,14 +1,6 @@
 import React from 'react';
+import { TrackInfoProps } from '../../models/track';
 
-interface TrackInfoProps {
-  currentTrack: {
-    name: string;
-    artists: Array<{ name: string }>;
-    album: {
-      images: Array<{ url: string }>;
-    };
-  } | null;
-}
 
 const TrackInfo: React.FC<TrackInfoProps> = ({ currentTrack }) => (
   <div className="flex items-center space-x-4">
@@ -20,8 +12,8 @@ const TrackInfo: React.FC<TrackInfoProps> = ({ currentTrack }) => (
       />
     )}
     <div>
-      <div className="font-medium">{currentTrack?.name}</div>
-      <div className="text-sm opacity-70">
+      <div className="font-medium text-white">{currentTrack?.name}</div>
+      <div className="text-sm text-gray-400">
         {currentTrack?.artists.map((artist) => artist.name).join(', ')}
       </div>
     </div>

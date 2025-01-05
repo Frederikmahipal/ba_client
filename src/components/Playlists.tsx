@@ -1,45 +1,10 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useRef, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { usePlayback } from '../utils/playback';
-
-interface Track {
-  id: string;
-  uri: string;
-  name: string;
-  artists: Array<{ 
-    id: string;
-    name: string 
-  }>;
-  album: {
-    id: string;
-    name: string;
-    images: Array<{ url: string }>;
-  };
-  duration_ms: number;
-}
-
-interface Playlist {
-  id: string;
-  name: string;
-  images: Array<{ url: string }>;
-  tracks: {
-    total: number;
-  };
-}
-
-interface PlaylistDetails {
-  id: string;
-  name: string;
-  images: Array<{ url: string }>;
-  tracks: {
-    items: Array<{ track: Track }>;
-    total: number;
-  };
-  owner: {
-    display_name: string;
-  };
-}
+import TrackItem from './TrackItem';
+import { Track } from '../models/track';
+import { Playlist, PlaylistDetails } from '../models/playlist';
 
 interface PlaylistsProps {
   onArtistSelect?: (artistId: string) => void;
@@ -49,6 +14,13 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
   const { user } = useAuth();
   const { handlePlayTrack } = usePlayback();
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadedTracks, setLoadedTracks] = useState<Array<{ track: Track }>>([]);
+  const [nextTracksUrl, setNextTracksUrl] = useState<string | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: playlists, isLoading, error } = useQuery({
     queryKey: ['playlists'],
@@ -77,7 +49,10 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
       }
     },
     enabled: !!user?.accessToken,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
 
   const { data: playlistDetails, isLoading: isLoadingDetails } = useQuery({
@@ -95,25 +70,171 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
         throw new Error('Failed to fetch playlist details');
       }
       
-      return response.json() as Promise<PlaylistDetails>;
+      const data = await response.json() as PlaylistDetails;
+      setLoadedTracks(data.tracks.items);
+      setNextTracksUrl(data.tracks.next);
+      return data;
     },
     enabled: !!selectedPlaylist?.id && !!user?.accessToken,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+    gcTime: 0
   });
 
-  const handleTrackClick = (trackItem: { track: Track }) => {
+  const loadMoreTracks = async () => {
+    if (!nextTracksUrl || !user?.accessToken || isLoadingMore) return;
+
+    setIsLoadingMore(true);
+    try {
+      const response = await fetch(nextTracksUrl, {
+        headers: {
+          'Authorization': `Bearer ${user.accessToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch additional tracks');
+      }
+
+      const data = await response.json();
+      setLoadedTracks(prev => [...prev, ...data.items]);
+      setNextTracksUrl(data.next);
+    } catch (error) {
+      console.error('Error loading more tracks:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  // Add intersection observer for infinite scroll
+  const trackListRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && nextTracksUrl) {
+          loadMoreTracks();
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    const currentTrackList = trackListRef.current;
+    if (currentTrackList) {
+      observer.observe(currentTrackList);
+    }
+
+    return () => {
+      if (currentTrackList) {
+        observer.unobserve(currentTrackList);
+      }
+    };
+  }, [nextTracksUrl]);
+
+  const handleTrackClick = (trackItem: { track: Track }, index: number) => {
+    if (!selectedPlaylist) return;
+    
     const { track } = trackItem;
-    handlePlayTrack(track.uri, {
+    const completeTrack = {
       id: track.id,
       uri: track.uri,
       name: track.name,
       artists: track.artists,
-      album: {
-        id: track.album.id,
-        name: track.album.name,
-        images: track.album.images
-      }
+      album: track.album,
+      duration_ms: track.duration_ms
+    };
+
+    handlePlayTrack(track.uri, completeTrack, {
+      type: 'playlist',
+      id: selectedPlaylist.id,
+      uri: `spotify:playlist:${selectedPlaylist.id}`,
+      position: index
     });
   };
+
+  // Reset tracks when changing playlists
+  useEffect(() => {
+    if (selectedPlaylist?.id) {
+      setLoadedTracks([]);
+      setNextTracksUrl(null);
+    }
+  }, [selectedPlaylist?.id]);
+
+  const handleCreatePlaylist = async () => {
+    if (!newPlaylistName.trim() || !user?.accessToken) return;
+    
+    setIsCreating(true);
+    try {
+      const response = await fetch('http://localhost:4000/api/spotify/playlists', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${user.accessToken}`,
+          'Content-Type': 'application/json',
+          'credentials': 'include'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ name: newPlaylistName })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create playlist');
+      }
+
+      // Force refetch playlists
+      await queryClient.invalidateQueries({ queryKey: ['playlists'] });
+      await queryClient.refetchQueries({ queryKey: ['playlists'] });
+      
+      setIsCreateModalOpen(false);
+      setNewPlaylistName('');
+    } catch (error) {
+      console.error('Error creating playlist:', error);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const createPlaylistModal = (
+    <dialog 
+      className={`modal ${isCreateModalOpen ? 'modal-open' : ''}`}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          setIsCreateModalOpen(false);
+        }
+      }}
+    >
+      <div className="modal-box">
+        <h3 className="font-bold text-lg mb-4">Create New Playlist</h3>
+        <input
+          type="text"
+          placeholder="Playlist name"
+          className="input input-bordered w-full mb-4"
+          value={newPlaylistName}
+          onChange={(e) => setNewPlaylistName(e.target.value)}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              handleCreatePlaylist();
+            }
+          }}
+        />
+        <div className="modal-action">
+          <button 
+            className="btn btn-ghost"
+            onClick={() => setIsCreateModalOpen(false)}
+          >
+            Cancel
+          </button>
+          <button
+            className={`btn btn-primary ${isCreating ? 'loading' : ''}`}
+            onClick={handleCreatePlaylist}
+            disabled={!newPlaylistName.trim() || isCreating}
+          >
+            Create
+          </button>
+        </div>
+      </div>
+    </dialog>
+  );
 
   if (isLoading) {
     return (
@@ -126,20 +247,23 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
   if (error) {
     return (
       <div className="p-4 text-error flex flex-col items-center justify-center h-full">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <p className="text-center">{error instanceof Error ? error.message : 'Error loading playlists'}</p>
+        <p className="mb-4">Failed to load playlists</p>
+        <button 
+          className="btn btn-error"
+          onClick={() => window.location.reload()}
+        >
+          Retry
+        </button>
       </div>
     );
   }
 
-  if (selectedPlaylist && playlistDetails) {
+  if (playlistDetails) {
     return (
       <div className="p-4">
         <button 
-          onClick={() => setSelectedPlaylist(null)} 
-          className="mb-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+          onClick={() => setSelectedPlaylist(null)}
+          className="btn btn-ghost mb-4"
         >
           Back to Playlists
         </button>
@@ -167,43 +291,26 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
             </div>
 
             <div className="space-y-2">
-              {playlistDetails.tracks.items.map((item, index) => (
-                <div 
+              {loadedTracks.map((item, index) => (
+                <TrackItem
                   key={`${item.track.id}-${index}`}
-                  className="flex items-center p-2 hover:bg-base-200 rounded-lg cursor-pointer"
-                  onClick={() => handleTrackClick(item)}
-                >
-                  {item.track.album.images?.[0] && (
-                    <img 
-                      src={item.track.album.images[0].url}
-                      alt={item.track.name}
-                      className="w-10 h-10 object-cover rounded mr-3"
-                    />
-                  )}
-                  <div>
-                    <div className="font-medium">{item.track.name}</div>
-                    <div className="text-sm opacity-75">
-                      {item.track.artists.map((artist, i) => (
-                        <React.Fragment key={artist.id}>
-                          {i > 0 && ', '}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onArtistSelect?.(artist.id);
-                            }}
-                            className="hover:text-primary hover:underline"
-                          >
-                            {artist.name}
-                          </button>
-                        </React.Fragment>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="ml-auto text-sm opacity-75">
-                    {formatDuration(item.track.duration_ms)}
-                  </div>
-                </div>
+                  track={item.track}
+                  index={index + 1}
+                  onClick={() => handleTrackClick(item, index)}
+                  onArtistSelect={onArtistSelect}
+                  albumImages={item.track.album?.images}
+                />
               ))}
+              
+              {/* Loading indicator at bottom */}
+              {isLoadingMore && (
+                <div className="flex justify-center py-4">
+                  <span className="loading loading-spinner loading-md"></span>
+                </div>
+              )}
+              
+              {/* Intersection observer target */}
+              <div ref={trackListRef} className="h-4" />
             </div>
           </>
         )}
@@ -222,7 +329,18 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Your Playlists</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">Your Playlists</h2>
+        <button
+          className="btn btn-circle btn-ghost"
+          onClick={() => setIsCreateModalOpen(true)}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
+      </div>
+      {createPlaylistModal}
       <div className="space-y-2">
         {playlists?.map((playlist) => {
           if (!playlist) return null;
@@ -262,10 +380,5 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
   );
 };
 
-const formatDuration = (ms: number): string => {
-  const minutes = Math.floor(ms / 60000);
-  const seconds = Math.floor((ms % 60000) / 1000);
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-};
 
 export default Playlists;

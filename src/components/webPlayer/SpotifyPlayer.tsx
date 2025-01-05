@@ -4,6 +4,8 @@ import { useAuth } from '../../hooks/useAuth';
 import PlayerControls from './PlayerControls';
 import TrackInfo from './TrackInfo';
 import ProgressBar from './ProgressBar';
+import VolumeControl from './VolumeControl';
+import { WebPlaybackTrack, PlayerState } from '../../models/player';
 
 declare global {
   interface Window {
@@ -11,47 +13,26 @@ declare global {
   }
 }
 
-interface PlayerState {
-  paused: boolean;
-  position: number;
-  duration: number;
-  track_window: {
-    current_track: {
-      name: string;
-      artists: Array<{ name: string }>;
-      album: {
-        images: Array<{ url: string }>;
-      };
-    };
-  };
-}
-
 const SpotifyPlayer: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [player, setPlayer] = useState<Spotify.Player | null>(null);
   const [is_active, setActive] = useState(false);
-  const [current_track, setTrack] = useState<any>(null);
-  const [playerState, setPlayerState] = useState<PlayerState | null>(null);
-
-  const fetchCurrentPlayback = async (accessToken: string) => {
-    try {
-      const response = await fetch('https://api.spotify.com/v1/me/player', {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
-      
-      if (response.status === 200) {
-        const data = await response.json();
-        return data;
+  const [current_track, setTrack] = useState<WebPlaybackTrack | null>(null);
+  const [playerState, setPlayerState] = useState<PlayerState>({
+    paused: true,  // Initialize as paused
+    position: 0,
+    duration: 0,
+    track_window: {
+      current_track: {  // Provide a minimal WebPlaybackTrack structure
+        name: '',
+        artists: [],
+        album: {
+          images: []
+        }
       }
-      return null;
-    } catch (error) {
-      console.error('Error fetching current playback:', error);
-      return null;
     }
-  };
+  });
 
   useQuery({
     queryKey: ['spotifyPlayer'],
@@ -101,92 +82,53 @@ const SpotifyPlayer: React.FC = () => {
           console.log('Ready with Device ID', device_id);
           queryClient.setQueryData(['spotifyDeviceId'], device_id);
           
+          if (!user?.accessToken) {
+            console.error('No access token available');
+            return;
+          }
+
           try {
             // Add initial delay to ensure player is ready
             await new Promise(resolve => setTimeout(resolve, 1000));
             
-            // First fetch current playback state
-            const currentPlayback = await fetchCurrentPlayback(user?.accessToken || '');
+            // Check if we've recently tried to activate (to avoid rate limit)
+            const lastAttempt = queryClient.getQueryData(['deviceActivationAttempt']) as number | undefined;
+            const now = Date.now();
+            if (lastAttempt && (now - lastAttempt) < 60000) { // 1 minute cooldown
+              return;
+            }
             
-            if (!currentPlayback || !currentPlayback.item) {
-              // If there's no current playback, try to get recently played tracks
-              const recentResponse = await fetch('https://api.spotify.com/v1/me/player/recently-played?limit=1', {
-                headers: {
-                  'Authorization': `Bearer ${user?.accessToken}`,
-                },
-              });
-              
-              if (recentResponse.ok) {
-                const recentTracks = await recentResponse.json();
-                if (recentTracks.items?.length > 0) {
-                  // First, transfer to our device
-                  await fetch('https://api.spotify.com/v1/me/player', {
-                    method: 'PUT',
-                    headers: {
-                      'Authorization': `Bearer ${user?.accessToken}`,
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      device_ids: [device_id],
-                      play: false,
-                    })
-                  });
-        
-                  await new Promise(resolve => setTimeout(resolve, 1000));
-                  
-                  // Then start playing the most recently played track
-                  await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device_id}`, {
-                    method: 'PUT',
-                    headers: {
-                      'Authorization': `Bearer ${user?.accessToken}`,
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      uris: [recentTracks.items[0].track.uri],
-                      position_ms: 0
-                    }),
-                  });
-                }
-              }
-            } else {
-              // Transfer playback to our device
-              await fetch('https://api.spotify.com/v1/me/player', {
-                method: 'PUT',
-                headers: {
-                  'Authorization': `Bearer ${user?.accessToken}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  device_ids: [device_id],
-                  play: false,
-                })
-              });
-        
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              
-              // Start playing with the exact position
-              await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device_id}`, {
-                method: 'PUT',
-                headers: {
-                  'Authorization': `Bearer ${user?.accessToken}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  uris: [currentPlayback.item.uri],
-                  position_ms: currentPlayback.progress_ms || 0
-                })
-              });
-        
-              // Set the correct play state
-              if (!currentPlayback.is_playing) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                await player?.pause();
-              }
+            queryClient.setQueryData(['deviceActivationAttempt'], now);
+
+            const response = await fetch('http://localhost:4000/api/spotify/player/activate-device', {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${user.accessToken}`,
+                'Content-Type': 'application/json',
+                'credentials': 'include'
+              },
+              credentials: 'include',
+              body: JSON.stringify({
+                deviceId: device_id
+              })
+            });
+
+            if (response.status === 429) {
+              // Rate limit hit - silently handle it
+              console.log('Rate limit reached for device activation');
+              return;
+            }
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
             }
             
             setActive(true);
           } catch (error) {
-            console.error('Error activating device:', error);
+            // Only log non-rate-limit errors
+            if (error instanceof Error && !error.message.includes('429')) {
+              console.error('Error activating device:', error);
+            }
           }
         });
 
@@ -241,31 +183,160 @@ const SpotifyPlayer: React.FC = () => {
 
   if (!is_active) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 bg-base-100 p-4">
-        <div className="text-center">
-          Instance not active. Transfer your playback using your Spotify app
+      <div className="bg-secondary">
+        <div className="px-4 py-2">
+          {/* Desktop Layout Placeholder */}
+          <div className="hidden lg:flex lg:items-center lg:justify-between">
+            <div className="w-[30%]">
+              {/* Empty Track Info Placeholder */}
+              <div className="flex items-center">
+                <div className="w-14 h-14 bg-base-300 rounded animate-pulse"></div>
+                <div className="ml-3">
+                  <div className="h-4 w-32 bg-base-300 rounded animate-pulse"></div>
+                  <div className="h-3 w-24 bg-base-300 rounded animate-pulse mt-2"></div>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col items-center w-[40%]">
+              {/* Controls Placeholder */}
+              <div className="flex items-center space-x-4">
+                <div className="w-8 h-8 rounded-full bg-base-300"></div>
+                <div className="w-10 h-10 rounded-full bg-base-300"></div>
+                <div className="w-8 h-8 rounded-full bg-base-300"></div>
+              </div>
+              {/* Progress Bar Placeholder */}
+              <div className="w-full mt-2">
+                <div className="h-1 w-full bg-base-300 rounded"></div>
+              </div>
+            </div>
+            <div className="w-[30%] flex justify-end">
+              {/* Volume Control Placeholder */}
+              <div className="w-32 h-1 bg-base-300 rounded"></div>
+            </div>
+          </div>
+
+          {/* Mobile Layout Placeholder */}
+          <div className="lg:hidden">
+            <div className="mb-1">
+              {/* Mobile Progress Bar Placeholder */}
+              <div className="h-1 w-full bg-base-300 rounded"></div>
+            </div>
+            <div className="flex items-center justify-between">
+              {/* Mobile Track Info Placeholder */}
+              <div className="flex items-center flex-1 min-w-0">
+                <div className="w-8 h-8 bg-base-300 rounded-lg mr-2"></div>
+                <div>
+                  <div className="h-3 w-24 bg-base-300 rounded"></div>
+                  <div className="h-2 w-20 bg-base-300 rounded mt-1"></div>
+                </div>
+              </div>
+              {/* Mobile Controls Placeholder */}
+              <div className="flex items-center gap-1 ml-1">
+                <div className="w-6 h-6 rounded-full bg-base-300"></div>
+                <div className="w-8 h-8 rounded-full bg-base-300"></div>
+                <div className="w-6 h-6 rounded-full bg-base-300"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-secondary">
-      <div className="container mx-auto px-4 py-2">
-        <div className="flex items-center justify-between">
-          <TrackInfo currentTrack={current_track} />
-          <PlayerControls
-            onPlayPause={handlePlayPause}
-            onNext={handleNext}
-            onPrevious={handlePrevious}
-            isPaused={playerState?.paused || false}
-          />
-          <ProgressBar
-  position={playerState?.position || 0}
-  duration={playerState?.duration || 0}
-  onSeek={(position) => player?.seek(position)}
-  isPaused={playerState?.paused || false}  // Add this prop
-/>
+    <div className="bg-secondary">
+      <div className="px-4 py-2">
+        {/* Desktop Layout */}
+        <div className="hidden lg:flex lg:items-center lg:justify-between">
+          <div className="w-[30%]">
+            <TrackInfo currentTrack={current_track} />
+          </div>
+          <div className="flex flex-col items-center w-[40%]">
+            <PlayerControls
+              onPlayPause={handlePlayPause}
+              onNext={handleNext}
+              onPrevious={handlePrevious}
+              isPaused={playerState?.paused || false}
+            />
+            <ProgressBar
+              position={playerState?.position || 0}
+              duration={playerState?.duration || 0}
+              onSeek={(position) => player?.seek(position)}
+              isPaused={playerState?.paused || false}
+            />
+          </div>
+          <div className="w-[30%] flex justify-end">
+            <VolumeControl player={player} />
+          </div>
+        </div>
+
+        {/* Mobile Layout */}
+        <div className="lg:hidden">
+          {/* Progress Bar at the top */}
+          <div className="mb-1">
+            <ProgressBar
+              position={playerState?.position || 0}
+              duration={playerState?.duration || 0}
+              onSeek={(position) => player?.seek(position)}
+              isPaused={playerState?.paused || false}
+            />
+          </div>
+          
+          {/* Controls and Track Info in one row */}
+          <div className="flex items-center justify-between">
+            {/* Track Info - Compact */}
+            <div className="flex items-center flex-1 min-w-0">
+              {current_track?.album?.images[0]?.url && (
+                <img
+                  src={current_track.album.images[0].url}
+                  alt={current_track.name}
+                  className="w-8 h-8 rounded-lg mr-2"
+                />
+              )}
+              <div className="truncate">
+                <div className="font-medium text-sm text-white truncate">
+                  {current_track?.name}
+                </div>
+                <div className="text-xs text-gray-400 truncate">
+                  {current_track?.artists.map(artist => artist.name).join(', ')}
+                </div>
+              </div>
+            </div>
+
+            {/* Controls - Compact */}
+            <div className="flex items-center gap-1 ml-1">
+              <button 
+                className="text-[#b3b3b3] hover:text-white transition-colors p-1"
+                onClick={handlePrevious}
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M3.3 1a.7.7 0 0 1 .7.7v5.15l9.95-5.744a.7.7 0 0 1 1.05.606v12.575a.7.7 0 0 1-1.05.607L4 9.149V14.3a.7.7 0 0 1-.7.7H1.7a.7.7 0 0 1-.7-.7V1.7a.7.7 0 0 1 .7-.7h1.6z" />
+                </svg>
+              </button>
+              <button 
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-white hover:scale-105 transition-transform"
+                onClick={handlePlayPause}
+              >
+                {playerState?.paused ? (
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="black">
+                    <path d="M3 1.713a.7.7 0 0 1 1.05-.607l10.89 6.288a.7.7 0 0 1 0 1.212L4.05 14.894A.7.7 0 0 1 3 14.288V1.713z" />
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="black">
+                    <path d="M2.7 1a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7H2.7zm8 0a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-2.6z" />
+                  </svg>
+                )}
+              </button>
+              <button 
+                className="text-[#b3b3b3] hover:text-white transition-colors p-1"
+                onClick={handleNext}
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M12.7 1a.7.7 0 0 0-.7.7v5.15L2.05 1.107A.7.7 0 0 0 1 1.712v12.575a.7.7 0 0 0 1.05.607L12 9.149V14.3a.7.7 0 0 0 .7.7h1.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-1.6z" />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

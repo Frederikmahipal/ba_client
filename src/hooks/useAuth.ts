@@ -17,7 +17,6 @@ export const useAuth = () => {
     retry: false,
   });
 
-  // Add this getter for the access token
   const accessToken = user?.accessToken;
 
   const loginMutation = useMutation({

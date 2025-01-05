@@ -4,14 +4,14 @@ interface ProgressBarProps {
   position: number;
   duration: number;
   onSeek: (position: number) => void;
-  isPaused?: boolean;  // Add this prop to know when playback is paused
+  isPaused?: boolean;
 }
 
 const ProgressBar: React.FC<ProgressBarProps> = ({ position, duration, onSeek, isPaused }) => {
   const [currentPosition, setCurrentPosition] = useState(position);
 
   useEffect(() => {
-    setCurrentPosition(position); // Reset current position when prop changes
+    setCurrentPosition(position);
   }, [position]);
 
   useEffect(() => {
@@ -24,7 +24,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ position, duration, onSeek, i
             clearInterval(intervalId);
             return duration;
           }
-          return prev + 1000; // Increment by 1 second (1000ms)
+          return prev + 1000;
         });
       }, 1000);
     }
@@ -42,17 +42,21 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ position, duration, onSeek, i
   };
 
   return (
-    <div className="w-1/3 flex items-center space-x-2">
-      <span className="text-xs">{formatTime(currentPosition)}</span>
+    <div className="flex items-center space-x-2 w-full px-2 lg:px-4">
+      <span className="text-xs text-white min-w-[40px] text-right">
+        {formatTime(currentPosition)}
+      </span>
       <input
         type="range"
         min={0}
         max={duration}
         value={currentPosition}
-        className="range range-xs range-primary flex-grow"
+        className="flex-grow h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
         onChange={(e) => handleChange(parseInt(e.target.value))}
       />
-      <span className="text-xs">{formatTime(duration)}</span>
+      <span className="text-xs text-white min-w-[40px]">
+        {formatTime(duration)}
+      </span>
     </div>
   );
 };

@@ -12,7 +12,7 @@ const Auth: React.FC = () => {
 
       <div className="drawer-content">
         <div className="min-h-screen bg-base-100 flex items-center justify-center">
-          <div className="hero min-h-screen bg-primary flex flex-col lg:flex-row items-center justify-center">
+          <div className="hero min-h-screen bg-secondary flex flex-col lg:flex-row items-center justify-center">
             <div className="hero-content text-center lg:text-left lg:w-1/2">
               <div className="max-w-md mx-auto">
                 <h1 className="text-5xl font-bold">Spotify</h1>

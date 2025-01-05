@@ -1,23 +1,13 @@
-# Use an official Node runtime as the base image
-FROM node:20
+FROM node:20-bullseye-slim
 
-# Set the working directory in the container
-WORKDIR /client
+WORKDIR /app
 
-# Copy package.json and yarn.lock
-COPY package*.json yarn.lock ./
+COPY package.json yarn.lock ./
 
-# Remove node_modules and yarn.lock if they exist
-RUN rm -rf node_modules yarn.lock
+RUN yarn install
 
-# Install all dependencies, including optional ones
-RUN yarn install --frozen-lockfile --ignore-optional
-
-# Copy the rest of the application code
 COPY . .
 
-# Expose port 5173
-EXPOSE 5173
+EXPOSE 3000
 
-# Start the app in development mode
 CMD ["yarn", "dev"]
