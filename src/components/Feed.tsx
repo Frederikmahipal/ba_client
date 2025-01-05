@@ -50,8 +50,6 @@ const Feed: React.FC<FeedProps> = ({ onArtistSelect, onAlbumSelect }) => {
 
   return (
     <div className="p-4">
-      
-
       {artistUpdates && artistUpdates.length > 0 && (
         <div className="mb-8">
           <h2 className="text-xl mb-4">New Releases from Your Artists</h2>
@@ -69,7 +67,6 @@ const Feed: React.FC<FeedProps> = ({ onArtistSelect, onAlbumSelect }) => {
                   />
                   <h3 className="text-lg font-medium">{update.artistName}</h3>
                 </div>
-
                 <div className="mb-4">
                   <h4 className="font-medium mb-2">New Releases</h4>
                   <div className="grid grid-cols-3 gap-2">

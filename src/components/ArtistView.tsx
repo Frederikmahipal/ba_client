@@ -155,10 +155,7 @@ const ArtistView: React.FC<ArtistViewProps> = ({
     setExpandedAlbumId(expandedAlbumId === albumId ? null : albumId);
   };
 
-  const handleArtistClick = (e: React.MouseEvent, artistId: string) => {
-    e.stopPropagation();
-    onArtistSelect?.(artistId);
-  };
+
 
   const handleTrackClick = (track: Track, index: number) => {
     // Ensure track has complete album data
@@ -190,11 +187,6 @@ const ArtistView: React.FC<ArtistViewProps> = ({
     }
   };
 
-  const formatDuration = (ms: number): string => {
-    const minutes = Math.floor(ms / 60000);
-    const seconds = Math.floor((ms % 60000) / 1000);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
 
   if (isLoading) return <div>Loading...</div>;
   if (isError) return <div>Error loading artist details</div>;
