@@ -204,7 +204,7 @@ const TrackItem: React.FC<TrackItemProps> = ({
                 e.stopPropagation();
                 setActiveDropdownId(activeDropdownId === track.id ? null : track.id);
               }}
-              className="btn btn-ghost btn-sm btn-circle opacity-0 group-hover:opacity-100"
+              className="btn btn-ghost btn-sm btn-circle"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />

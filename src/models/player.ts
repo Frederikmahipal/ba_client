@@ -11,6 +11,6 @@ export interface WebPlaybackTrack {
     position: number;
     duration: number;
     track_window: {
-      current_track: WebPlaybackTrack | null;
+      current_track: WebPlaybackTrack;
     };
   }

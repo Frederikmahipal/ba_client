@@ -82,25 +82,53 @@ const SpotifyPlayer: React.FC = () => {
           console.log('Ready with Device ID', device_id);
           queryClient.setQueryData(['spotifyDeviceId'], device_id);
           
+          if (!user?.accessToken) {
+            console.error('No access token available');
+            return;
+          }
+
           try {
             // Add initial delay to ensure player is ready
             await new Promise(resolve => setTimeout(resolve, 1000));
             
-            // Use our backend route instead of direct Spotify API call
-            await fetch('http://localhost:4000/api/spotify/player/activate-device', {
+            // Check if we've recently tried to activate (to avoid rate limit)
+            const lastAttempt = queryClient.getQueryData(['deviceActivationAttempt']) as number | undefined;
+            const now = Date.now();
+            if (lastAttempt && (now - lastAttempt) < 60000) { // 1 minute cooldown
+              return;
+            }
+            
+            queryClient.setQueryData(['deviceActivationAttempt'], now);
+
+            const response = await fetch('http://localhost:4000/api/spotify/player/activate-device', {
               method: 'PUT',
               headers: {
-                'Authorization': `Bearer ${user?.accessToken}`,
+                'Authorization': `Bearer ${user.accessToken}`,
                 'Content-Type': 'application/json',
+                'credentials': 'include'
               },
+              credentials: 'include',
               body: JSON.stringify({
                 deviceId: device_id
               })
             });
+
+            if (response.status === 429) {
+              // Rate limit hit - silently handle it
+              console.log('Rate limit reached for device activation');
+              return;
+            }
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
             
             setActive(true);
           } catch (error) {
-            console.error('Error activating device:', error);
+            // Only log non-rate-limit errors
+            if (error instanceof Error && !error.message.includes('429')) {
+              console.error('Error activating device:', error);
+            }
           }
         });
 
@@ -155,9 +183,61 @@ const SpotifyPlayer: React.FC = () => {
 
   if (!is_active) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 bg-base-100 p-4">
-        <div className="text-center">
-          Instance not active. Transfer your playback using your Spotify app
+      <div className="bg-secondary">
+        <div className="px-4 py-2">
+          {/* Desktop Layout Placeholder */}
+          <div className="hidden lg:flex lg:items-center lg:justify-between">
+            <div className="w-[30%]">
+              {/* Empty Track Info Placeholder */}
+              <div className="flex items-center">
+                <div className="w-14 h-14 bg-base-300 rounded animate-pulse"></div>
+                <div className="ml-3">
+                  <div className="h-4 w-32 bg-base-300 rounded animate-pulse"></div>
+                  <div className="h-3 w-24 bg-base-300 rounded animate-pulse mt-2"></div>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col items-center w-[40%]">
+              {/* Controls Placeholder */}
+              <div className="flex items-center space-x-4">
+                <div className="w-8 h-8 rounded-full bg-base-300"></div>
+                <div className="w-10 h-10 rounded-full bg-base-300"></div>
+                <div className="w-8 h-8 rounded-full bg-base-300"></div>
+              </div>
+              {/* Progress Bar Placeholder */}
+              <div className="w-full mt-2">
+                <div className="h-1 w-full bg-base-300 rounded"></div>
+              </div>
+            </div>
+            <div className="w-[30%] flex justify-end">
+              {/* Volume Control Placeholder */}
+              <div className="w-32 h-1 bg-base-300 rounded"></div>
+            </div>
+          </div>
+
+          {/* Mobile Layout Placeholder */}
+          <div className="lg:hidden">
+            <div className="mb-1">
+              {/* Mobile Progress Bar Placeholder */}
+              <div className="h-1 w-full bg-base-300 rounded"></div>
+            </div>
+            <div className="flex items-center justify-between">
+              {/* Mobile Track Info Placeholder */}
+              <div className="flex items-center flex-1 min-w-0">
+                <div className="w-8 h-8 bg-base-300 rounded-lg mr-2"></div>
+                <div>
+                  <div className="h-3 w-24 bg-base-300 rounded"></div>
+                  <div className="h-2 w-20 bg-base-300 rounded mt-1"></div>
+                </div>
+              </div>
+              {/* Mobile Controls Placeholder */}
+              <div className="flex items-center gap-1 ml-1">
+                <div className="w-6 h-6 rounded-full bg-base-300"></div>
+                <div className="w-8 h-8 rounded-full bg-base-300"></div>
+                <div className="w-6 h-6 rounded-full bg-base-300"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

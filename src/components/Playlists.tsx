@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { usePlayback } from '../utils/playback';
 import TrackItem from './TrackItem';
@@ -54,6 +54,10 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadedTracks, setLoadedTracks] = useState<Array<{ track: Track }>>([]);
   const [nextTracksUrl, setNextTracksUrl] = useState<string | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: playlists, isLoading, error } = useQuery({
     queryKey: ['playlists'],
@@ -83,7 +87,9 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
     },
     enabled: !!user?.accessToken,
     staleTime: 0,
-    gcTime: 0
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
 
   const { data: playlistDetails, isLoading: isLoadingDetails } = useQuery({
@@ -191,6 +197,82 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
     }
   }, [selectedPlaylist?.id]);
 
+  const handleCreatePlaylist = async () => {
+    if (!newPlaylistName.trim() || !user?.accessToken) return;
+    
+    setIsCreating(true);
+    try {
+      const response = await fetch('http://localhost:4000/api/spotify/playlists', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${user.accessToken}`,
+          'Content-Type': 'application/json',
+          'credentials': 'include'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ name: newPlaylistName })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create playlist');
+      }
+
+      // Force refetch playlists
+      await queryClient.invalidateQueries({ queryKey: ['playlists'] });
+      await queryClient.refetchQueries({ queryKey: ['playlists'] });
+      
+      setIsCreateModalOpen(false);
+      setNewPlaylistName('');
+    } catch (error) {
+      console.error('Error creating playlist:', error);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const createPlaylistModal = (
+    <dialog 
+      className={`modal ${isCreateModalOpen ? 'modal-open' : ''}`}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          setIsCreateModalOpen(false);
+        }
+      }}
+    >
+      <div className="modal-box">
+        <h3 className="font-bold text-lg mb-4">Create New Playlist</h3>
+        <input
+          type="text"
+          placeholder="Playlist name"
+          className="input input-bordered w-full mb-4"
+          value={newPlaylistName}
+          onChange={(e) => setNewPlaylistName(e.target.value)}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              handleCreatePlaylist();
+            }
+          }}
+        />
+        <div className="modal-action">
+          <button 
+            className="btn btn-ghost"
+            onClick={() => setIsCreateModalOpen(false)}
+          >
+            Cancel
+          </button>
+          <button
+            className={`btn btn-primary ${isCreating ? 'loading' : ''}`}
+            onClick={handleCreatePlaylist}
+            disabled={!newPlaylistName.trim() || isCreating}
+          >
+            Create
+          </button>
+        </div>
+      </div>
+    </dialog>
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -284,7 +366,18 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Your Playlists</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">Your Playlists</h2>
+        <button
+          className="btn btn-circle btn-ghost"
+          onClick={() => setIsCreateModalOpen(true)}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
+      </div>
+      {createPlaylistModal}
       <div className="space-y-2">
         {playlists?.map((playlist) => {
           if (!playlist) return null;
