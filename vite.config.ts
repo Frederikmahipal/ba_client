@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:4000', // TODO: vercel url
+        target: 'https://ba-server.vercel.app', // TODO: vercel url
         changeOrigin: true,
         secure: false,
       }

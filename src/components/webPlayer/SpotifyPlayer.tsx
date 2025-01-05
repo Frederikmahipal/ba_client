@@ -100,7 +100,7 @@ const SpotifyPlayer: React.FC = () => {
             
             queryClient.setQueryData(['deviceActivationAttempt'], now);
 
-            const response = await fetch('http://localhost:4000/api/spotify/player/activate-device', {
+            const response = await fetch('https://ba-server.vercel.app/api/spotify/player/activate-device', {
               method: 'PUT',
               headers: {
                 'Authorization': `Bearer ${user.accessToken}`,

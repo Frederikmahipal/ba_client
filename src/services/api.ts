@@ -2,7 +2,7 @@ import axios, { AxiosResponse } from 'axios';
 import { User } from '../models/user';
 
 const api = axios.create({
-  baseURL: 'http://localhost:4000',
+  baseURL: 'https://ba-server.vercel.app',
   withCredentials: true,
 });
 
@@ -26,7 +26,7 @@ export const checkAuth = async (): Promise<User> => {
 };
 
 export const spotifyLogin = (): void => {
-  window.location.href = 'http://localhost:4000/auth/spotify/login';
+  window.location.href = 'https://ba-server.vercel.app/auth/spotify/login';
 };
 
 export default api;
