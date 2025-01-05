@@ -3,45 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { usePlayback } from '../utils/playback';
 import TrackItem from './TrackItem';
-
-interface Track {
-  id: string;
-  uri: string;
-  name: string;
-  artists: Array<{ 
-    id: string;
-    name: string 
-  }>;
-  album: {
-    id: string;
-    name: string;
-    images: Array<{ url: string }>;
-  };
-  duration_ms: number;
-}
-
-interface Playlist {
-  id: string;
-  name: string;
-  images: Array<{ url: string }>;
-  tracks: {
-    total: number;
-  };
-}
-
-interface PlaylistDetails {
-  id: string;
-  name: string;
-  images: Array<{ url: string }>;
-  tracks: {
-    items: Array<{ track: Track }>;
-    total: number;
-    next: string | null;
-  };
-  owner: {
-    display_name: string;
-  };
-}
+import { Track } from '../models/track';
+import { Playlist, PlaylistDetails } from '../models/playlist';
 
 interface PlaylistsProps {
   onArtistSelect?: (artistId: string) => void;
@@ -335,7 +298,7 @@ const Playlists: React.FC<PlaylistsProps> = ({ onArtistSelect }) => {
                   index={index + 1}
                   onClick={() => handleTrackClick(item, index)}
                   onArtistSelect={onArtistSelect}
-                  albumImages={item.track.album.images}
+                  albumImages={item.track.album?.images}
                 />
               ))}
               

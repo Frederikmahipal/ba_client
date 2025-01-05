@@ -6,7 +6,6 @@ import SpotifyPlayer from '../components/webPlayer/SpotifyPlayer';
 import RecentlyPlayed from '../components/RecentlyPlayed';
 import Feed from '../components/Feed';
 import AlbumView from '../components/AlbumView';
-import { Outlet } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
   const [activeBox, setActiveBox] = useState(0);

@@ -1,17 +1,8 @@
-import React, { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import React from 'react';
 import { Track, PlaybackContext } from '../models/track';
-import api from '../services/api';
-import { useAuth } from '../hooks/useAuth';
 import { useDropdownStore } from '../store/dropdownStore';
 import { usePlayback } from '../utils/playback';
 import TrackDropdown from './TrackDropdown';
-
-interface Playlist {
-  id: string;
-  name: string;
-  images: { url: string }[];
-}
 
 interface TrackItemProps {
   track: Track;
@@ -20,7 +11,6 @@ interface TrackItemProps {
   timestamp?: string;
   onClick?: () => void;
   onArtistSelect?: (artistId: string) => void;
-  onAlbumSelect?: (albumId: string) => void;
   albumImages?: { url: string }[];
   showOptions?: boolean;
 }
@@ -32,45 +22,11 @@ const TrackItem: React.FC<TrackItemProps> = ({
   timestamp,
   onClick,
   onArtistSelect,
-  onAlbumSelect,
   albumImages,
   showOptions = true
 }) => {
-  const { user } = useAuth();
   const { handlePlayTrack } = usePlayback();
   const { activeDropdownId, setActiveDropdownId } = useDropdownStore();
-  const queryClient = useQueryClient();
-
-  const isDropdownOpen = activeDropdownId === track.id;
-
-  // Fetch playlists only when needed
-  const { data: playlists } = useQuery<Playlist[]>({
-    queryKey: ['playlists'],
-    queryFn: async () => {
-      const response = await api.get('/api/spotify/playlists', {
-        headers: {
-          Authorization: `Bearer ${user?.accessToken}`
-        }
-      });
-      return response.data.items;
-    },
-    enabled: isDropdownOpen && !!user?.accessToken
-  });
-
-  const handleAddToPlaylist = async (playlistId: string) => {
-    try {
-      await api.post(`/api/spotify/playlists/${playlistId}/tracks`, {
-        tracks: [track.uri]
-      }, {
-        headers: {
-          Authorization: `Bearer ${user?.accessToken}`
-        }
-      });
-      setActiveDropdownId(null);
-    } catch (error) {
-      console.error('Failed to add track to playlist:', error);
-    }
-  };
 
   const formatDuration = (ms: number): string => {
     const minutes = Math.floor(ms / 60000);
@@ -92,7 +48,6 @@ const TrackItem: React.FC<TrackItemProps> = ({
     let context: PlaybackContext;
 
     if (track.album?.id) {
-      // If track has album info, use album context
       context = {
         type: 'album',
         uri: `spotify:album:${track.album.id}`,
@@ -101,7 +56,6 @@ const TrackItem: React.FC<TrackItemProps> = ({
         offset: { uri: track.uri }
       };
     } else if (albumImages && track.album_id) {
-      // If we have albumImages prop and album_id (in expanded album view)
       context = {
         type: 'album',
         uri: `spotify:album:${track.album_id}`,
@@ -110,7 +64,6 @@ const TrackItem: React.FC<TrackItemProps> = ({
         offset: { uri: track.uri }
       };
     } else {
-      // Fallback to just playing the track without context
       context = {
         type: 'artist',
         uri: `spotify:artist:${track.artists[0].id}`,
@@ -204,7 +157,7 @@ const TrackItem: React.FC<TrackItemProps> = ({
                 e.stopPropagation();
                 setActiveDropdownId(activeDropdownId === track.id ? null : track.id);
               }}
-              className="btn btn-ghost btn-sm btn-circle"
+              className="btn btn-ghost btn-sm btn-circle opacity-0 group-hover:opacity-100"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />

@@ -1,11 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '../services/api'; 
+import { SpotifySearchResponse } from '../models/spotifyItem';
 
-interface SpotifySearchResponse {
-  artists?: { items: any[] };
-  albums?: { items: any[] };
-  tracks?: { items: any[] };
-}
 
 const searchSpotify = async (query: string): Promise<SpotifySearchResponse | null> => {
   if (!query) return null;

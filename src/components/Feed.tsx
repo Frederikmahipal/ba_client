@@ -3,31 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../services/api';
 import { Artist } from '../models/artist';
 import { User } from '../models/user';
+import { FollowedArtist, ArtistUpdate } from '../models/artist';
 
 interface FeedProps {
   onArtistSelect: (artistId: string) => void;
   onAlbumSelect: (albumId: string) => void;
-}
-
-interface FollowedArtist {
-  spotifyArtistId: string;
-  name: string;
-  imageUrl: string;
-  followedAt: string;
-}
-
-interface ArtistUpdate {
-  artistId: string;
-  artistName: string;
-  artistImage: string;
-  updates: {
-    newReleases: Array<{
-      id: string;
-      name: string;
-      release_date: string;
-      images: Array<{ url: string }>;
-    }>;
-  };
 }
 
 interface FeedData {

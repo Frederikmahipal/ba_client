@@ -62,3 +62,7 @@ export interface TrackInfoProps {
     };
   } | null;
 }
+
+export interface TrackItem {
+  track: Track;
+}

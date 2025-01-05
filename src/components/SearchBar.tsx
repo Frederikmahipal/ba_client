@@ -1,20 +1,8 @@
 // components/SearchBar.tsx
 import React, { useState } from 'react';
 import { useSpotifySearch } from '../hooks/useSpotifySearch';
+import { SpotifyItem } from '../models/spotifyItem';
 
-interface SpotifyItem {
-  id: string;
-  name: string;
-  type: 'artist' | 'album' | 'track';
-  artists?: Array<{ id: string; name: string }>;
-  images?: Array<{ url: string }>;
-  album?: {
-    id: string;
-    name: string;
-    images: Array<{ url: string }>;
-  };
-  track_number?: number;
-}
 
 interface SearchBarProps {
   onArtistSelect: (artistId: string) => void;

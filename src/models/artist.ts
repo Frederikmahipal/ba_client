@@ -15,3 +15,24 @@ export interface Artist {
     uri: string;
     type: 'artist';
   }
+
+export interface FollowedArtist {
+    spotifyArtistId: string;
+    name: string;
+    imageUrl: string;
+    followedAt: string;
+  }
+  
+ export interface ArtistUpdate {
+    artistId: string;
+    artistName: string;
+    artistImage: string;
+    updates: {
+      newReleases: Array<{
+        id: string;
+        name: string;
+        release_date: string;
+        images: Array<{ url: string }>;
+      }>;
+    };
+  }
