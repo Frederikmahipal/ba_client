@@ -5,8 +5,9 @@ import { useAuth } from '../../hooks/useAuth';
 const ProtectedRoute: React.FC = () => {
   const { user, isCheckingAuth } = useAuth();
 
+
   if (isCheckingAuth) {
-    return <div>Loading...</div>; // Show loading state while checking auth
+    return <div>Loading...</div>;
   }
 
   if (!user) {
