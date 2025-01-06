@@ -1,12 +1,13 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import LoadingSpinner from '../common/LoadingSpinner';
 
 const ProtectedRoute: React.FC = () => {
   const { user, isCheckingAuth } = useAuth();
 
   if (isCheckingAuth) {
-    return <div>Loading...</div>; // Show loading state while checking auth
+    return <LoadingSpinner />;
   }
 
   if (!user) {

@@ -4,6 +4,7 @@ import api from '../services/api';
 import { Artist } from '../models/artist';
 import { User } from '../models/user';
 import { FollowedArtist, ArtistUpdate } from '../models/artist';
+import LoadingSpinner from './common/LoadingSpinner';
 
 interface FeedProps {
   onArtistSelect: (artistId: string) => void;
@@ -43,7 +44,7 @@ const Feed: React.FC<FeedProps> = ({ onArtistSelect, onAlbumSelect }) => {
   });
 
   if (feedLoading || recommendationsLoading) {
-    return <div>Loading...</div>;
+    return <LoadingSpinner />;
   }
 
   const followedArtists = feed?.followedArtists ?? [];

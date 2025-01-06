@@ -45,7 +45,6 @@ const SpotifyPlayer: React.FC = () => {
           }
 
           window.onSpotifyWebPlaybackSDKReady = () => {
-            console.log("Web Playback SDK is ready");
             resolve();
           };
 
@@ -79,7 +78,6 @@ const SpotifyPlayer: React.FC = () => {
         });
 
         newPlayer.addListener('ready', async ({ device_id }) => {
-          console.log('Ready with Device ID', device_id);
           queryClient.setQueryData(['spotifyDeviceId'], device_id);
           
           if (!user?.accessToken) {
@@ -88,10 +86,9 @@ const SpotifyPlayer: React.FC = () => {
           }
 
           try {
-            // Add initial delay to ensure player is ready
             await new Promise(resolve => setTimeout(resolve, 1000));
             
-            // Check if we've recently tried to activate (to avoid rate limit)
+            // avoid rate limit
             const lastAttempt = queryClient.getQueryData(['deviceActivationAttempt']) as number | undefined;
             const now = Date.now();
             if (lastAttempt && (now - lastAttempt) < 60000) { // 1 minute cooldown
@@ -104,8 +101,7 @@ const SpotifyPlayer: React.FC = () => {
               method: 'PUT',
               headers: {
                 'Authorization': `Bearer ${user.accessToken}`,
-                'Content-Type': 'application/json',
-                'credentials': 'include'
+                'Content-Type': 'application/json'
               },
               credentials: 'include',
               body: JSON.stringify({
@@ -113,9 +109,9 @@ const SpotifyPlayer: React.FC = () => {
               })
             });
 
+
             if (response.status === 429) {
               // Rate limit hit - silently handle it
-              console.log('Rate limit reached for device activation');
               return;
             }
 
@@ -132,10 +128,7 @@ const SpotifyPlayer: React.FC = () => {
           }
         });
 
-        newPlayer.addListener('not_ready', ({ device_id }) => {
-          console.log('Device ID has gone offline', device_id);
-          setActive(false);
-        });
+
 
         newPlayer.addListener('player_state_changed', (state) => {
           if (!state) {

@@ -5,6 +5,7 @@ import api from '../services/api';
 import { Track } from '../models/track';
 import { User } from '../models/user';
 import TrackItem from './TrackItem';
+import LoadingSpinner from './common/LoadingSpinner';
 
 interface ArtistViewProps {
   artistId: string;
@@ -188,8 +189,8 @@ const ArtistView: React.FC<ArtistViewProps> = ({
   };
 
 
-  if (isLoading) return <div>Loading...</div>;
-  if (isError) return <div>Error loading artist details</div>;
+  if (isLoading) return <LoadingSpinner />;
+  if (isError) return <div className="text-center text-error p-4">Error loading artist details</div>;
 
   const { artist, albums, topTracks } = data!;
   const artistImage = artist.images?.[0]?.url;
