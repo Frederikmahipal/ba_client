@@ -51,14 +51,14 @@ const SearchBar: React.FC<SearchBarProps> = ({
     const filteredItems = filterItems(allItems);
 
     return (
-      <div className="menu p-2 bg-base-200 rounded-box shadow-lg max-h-[60vh] overflow-y-auto">
+      <div className="menu p-2 bg-base-200 rounded-box shadow-lg max-h-96 overflow-y-auto overflow-x-hidden">
         {filteredItems.map((item) => (
           <div
             key={item.id}
             onClick={() => handleItemClick(item)}
-            className="flex items-center p-2 hover:bg-base-300 rounded-lg cursor-pointer transition-colors"
+            className="flex items-center p-2 hover:bg-base-300 rounded-lg cursor-pointer transition-colors w-full"
           >
-            <div className="w-10 h-10 mr-3">
+            <div className="w-10 h-10 flex-shrink-0 mr-3">
               {(item.type === 'track' ? item.album?.images?.[0]?.url : item.images?.[0]?.url) ? (
                 <img
                   src={item.type === 'track' ? item.album?.images[0].url : item.images![0].url}
@@ -71,9 +71,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
                 </div>
               )}
             </div>
-            <div className="flex-grow">
-              <div className="font-medium">{item.name}</div>
-              <div className="text-xs opacity-60">
+            <div className="flex-1 min-w-0">
+              <div className="font-medium truncate">{item.name}</div>
+              <div className="text-xs opacity-60 truncate">
                 {item.type === 'track' && item.artists && (
                   <>
                     {item.artists[0].name}

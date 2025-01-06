@@ -5,6 +5,7 @@ import { usePlayback } from '../utils/playback';
 import api from '../services/api';
 import { Track } from '../models/track';
 import { Album } from '../models/album';
+import LoadingSpinner from './common/LoadingSpinner';
 
 interface AlbumViewProps {
   albumId: string;
@@ -42,8 +43,8 @@ const AlbumView: React.FC<AlbumViewProps> = ({ albumId, onArtistSelect, onClose 
     });
   };
 
-  if (isLoading) return <div>Loading...</div>;
-  if (isError) return <div>Error loading album</div>;
+  if (isLoading) return <LoadingSpinner />;
+  if (isError) return <div className="text-center text-error p-4">Error loading album</div>;
   if (!album) return null;
 
   return (
