@@ -126,7 +126,7 @@ const RecentlyPlayed: React.FC<{ onArtistSelect?: (artistId: string) => void }> 
       {/* Context Info */}
       {currentlyPlaying?.context && (
         <div className="text-sm opacity-75">
-          Playing from {currentlyPlaying.context.type}: {currentlyPlaying.context.name}
+          Playing from {currentlyPlaying.context.type}
         </div>
       )}
 
