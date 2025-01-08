@@ -64,7 +64,6 @@ const Header: React.FC<HeaderProps> = ({
                 setIsProfileOpen(true);
                 setIsDropdownOpen(false);
               }}>Profile</button></li>
-              <li><button>Settings</button></li>
               <li><button onClick={handleLogout}>Logout</button></li>
             </ul>
           )}
