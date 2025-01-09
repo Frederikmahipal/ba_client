@@ -1,4 +1,3 @@
-// components/SearchBar.tsx
 import React, { useState } from 'react';
 import { useSpotifySearch } from '../hooks/useSpotifySearch';
 import { SpotifyItem } from '../models/spotifyItem';

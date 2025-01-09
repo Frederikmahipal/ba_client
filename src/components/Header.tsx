@@ -1,4 +1,3 @@
-// src/components/Header.tsx
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import SearchBar from './SearchBar';
