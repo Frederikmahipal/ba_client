@@ -14,7 +14,7 @@ const Signup: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[450px]"> {/* Fixed container height */}
+    <div className="min-h-[450px]"> 
       <form 
         onSubmit={handleSubmit} 
         className="flex flex-col space-y-4 bg-base-100 p-6 rounded-lg"
