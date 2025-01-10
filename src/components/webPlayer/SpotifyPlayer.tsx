@@ -24,7 +24,7 @@ const SpotifyPlayer: React.FC = () => {
     position: 0,
     duration: 0,
     track_window: {
-      current_track: {  // Provide a minimal WebPlaybackTrack structure
+      current_track: {  // WebPlaybackTrack structure
         name: '',
         artists: [],
         album: {

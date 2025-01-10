@@ -98,7 +98,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden px-4">
-      {/* Header - fixed height */}
+      {/* Header  */}
       <div className="flex-none py-4">
         <Header 
           onArtistSelect={handleArtistSelect}

@@ -13,7 +13,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-[450px]"> {/* Fixed container height */}
+    <div className="min-h-[450px]"> 
       <form 
         onSubmit={handleSubmit} 
         className="flex flex-col space-y-4 bg-base-100 p-6 rounded-lg"
@@ -51,7 +51,7 @@ const Login = () => {
             required
           />
         </div>
-        <div className="mt-auto pt-4"> {/* Push buttons to bottom */}
+        <div className="mt-auto pt-4"> 
           <button type="submit" className="btn btn-secondary w-full mb-2">Login</button>
           <button type="button" onClick={spotifyLogin} className="btn btn-accent w-full">
             Login with Spotify
