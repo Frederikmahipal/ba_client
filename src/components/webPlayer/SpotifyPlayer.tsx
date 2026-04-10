@@ -7,6 +7,8 @@ import ProgressBar from './ProgressBar';
 import VolumeControl from './VolumeControl';
 import { WebPlaybackTrack, PlayerState } from '../../models/player';
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+
 declare global {
   interface Window {
     onSpotifyWebPlaybackSDKReady: () => void;
@@ -97,7 +99,7 @@ const SpotifyPlayer: React.FC = () => {
             
             queryClient.setQueryData(['deviceActivationAttempt'], now);
 
-            const response = await fetch('https://ba-server.vercel.app/api/spotify/player/activate-device', {
+            const response = await fetch(`${apiBaseUrl}/api/spotify/player/activate-device`, {
               method: 'PUT',
               headers: {
                 'Authorization': `Bearer ${user.accessToken}`,

@@ -1,8 +1,10 @@
 import axios, { AxiosResponse } from 'axios';
 import { User } from '../models/user';
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+
 const api = axios.create({
-  baseURL: 'https://ba-server.vercel.app',
+  baseURL: apiBaseUrl,
   withCredentials: true,
 });
 
@@ -26,7 +28,7 @@ export const checkAuth = async (): Promise<User> => {
 };
 
 export const spotifyLogin = (): void => {
-  window.location.href = 'https://ba-server.vercel.app/auth/spotify/login';
+  window.location.href = `${apiBaseUrl}/auth/spotify/login`;
 };
 
 export default api;
